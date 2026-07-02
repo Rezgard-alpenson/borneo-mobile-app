@@ -796,6 +796,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final pwdCtrl = TextEditingController();
     String rolePilihan = "viewer";
     bool isSubmitting = false;
+    bool isPwdVisible = false;
 
     showModalBottomSheet(
       context: context,
@@ -856,11 +857,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     const SizedBox(height: 12),
                     TextField(
                       controller: pwdCtrl,
-                      obscureText: true,
+                      obscureText: !isPwdVisible,
                       decoration: InputDecoration(
                         labelText: "Password Awal (Sementara)",
                         helperText: "Berikan password ini ke user untuk login pertama kali",
                         prefixIcon: const Icon(Icons.lock_outline),
+                        suffixIcon: IconButton(
+                          icon: Icon(isPwdVisible ? Icons.visibility : Icons.visibility_off, color: utamaHijau),
+                          onPressed: () => setModalState(() => isPwdVisible = !isPwdVisible),
+                        ),
                         border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                       ),
                     ),
@@ -941,6 +946,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final baruCtrl = TextEditingController();
     final konfirmasiCtrl = TextEditingController();
     bool isSubmitting = false;
+    bool isLamaVisible = false;
+    bool isBaruVisible = false;
+    bool isKonfVisible = false;
 
     showModalBottomSheet(
       context: context,
@@ -982,30 +990,42 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     const SizedBox(height: 20),
                     TextField(
                       controller: lamaCtrl,
-                      obscureText: true,
+                      obscureText: !isLamaVisible,
                       decoration: InputDecoration(
                         labelText: "Password Lama / Sementara",
                         prefixIcon: const Icon(Icons.lock_open_rounded),
+                        suffixIcon: IconButton(
+                          icon: Icon(isLamaVisible ? Icons.visibility : Icons.visibility_off, color: Colors.blue),
+                          onPressed: () => setModalState(() => isLamaVisible = !isLamaVisible),
+                        ),
                         border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                       ),
                     ),
                     const SizedBox(height: 12),
                     TextField(
                       controller: baruCtrl,
-                      obscureText: true,
+                      obscureText: !isBaruVisible,
                       decoration: InputDecoration(
                         labelText: "Password Baru (Rahasia)",
                         prefixIcon: const Icon(Icons.lock_outline_rounded),
+                        suffixIcon: IconButton(
+                          icon: Icon(isBaruVisible ? Icons.visibility : Icons.visibility_off, color: Colors.blue),
+                          onPressed: () => setModalState(() => isBaruVisible = !isBaruVisible),
+                        ),
                         border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                       ),
                     ),
                     const SizedBox(height: 12),
                     TextField(
                       controller: konfirmasiCtrl,
-                      obscureText: true,
+                      obscureText: !isKonfVisible,
                       decoration: InputDecoration(
                         labelText: "Ulangi Password Baru",
                         prefixIcon: const Icon(Icons.check_circle_outline_rounded),
+                        suffixIcon: IconButton(
+                          icon: Icon(isKonfVisible ? Icons.visibility : Icons.visibility_off, color: Colors.blue),
+                          onPressed: () => setModalState(() => isKonfVisible = !isKonfVisible),
+                        ),
                         border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                       ),
                     ),
