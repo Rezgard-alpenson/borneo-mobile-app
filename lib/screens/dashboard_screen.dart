@@ -64,6 +64,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               } else if (val == 'change_pwd') {
                 _tampilkanDialogGantiPassword(context);
               } else if (val == 'logout') {
+                ScaffoldMessenger.of(context).clearSnackBars();
                 Navigator.of(context).pushReplacement(
                   MaterialPageRoute(builder: (_) => const LoginScreen()),
                 );
@@ -298,13 +299,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           try {
                             await _apiService.controlPump(1, val ? "ON" : "OFF");
                             if (context.mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(
+                              ScaffoldMessenger.of(context)..clearSnackBars()..showSnackBar(
                                 SnackBar(content: Text("Instruksi pompa ${val ? 'ON' : 'OFF'} dikirim via MQTT!"), backgroundColor: utamaHijau),
                               );
                             }
                           } catch (e) {
                             if (context.mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(
+                              ScaffoldMessenger.of(context)..clearSnackBars()..showSnackBar(
                                 SnackBar(content: Text("Gagal: ${e.toString().replaceAll('Exception: ', '')}"), backgroundColor: Colors.red),
                               );
                             }
@@ -483,7 +484,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           final b = double.tryParse(bawahCtrl.text.trim()) ?? 40.0;
                           final a = double.tryParse(atasCtrl.text.trim()) ?? 80.0;
                           if (b >= a) {
-                            ScaffoldMessenger.of(context).showSnackBar(
+                            ScaffoldMessenger.of(context)..clearSnackBars()..showSnackBar(
                               const SnackBar(content: Text("Batas bawah harus lebih kecil dari batas atas!"), backgroundColor: Colors.red),
                             );
                             return;
@@ -532,14 +533,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             if (ctx.mounted) Navigator.pop(ctx);
                             _refreshData(); // Segarkan UI agar threshold baru muncul
                             if (context.mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(
+                              ScaffoldMessenger.of(context)..clearSnackBars()..showSnackBar(
                                 const SnackBar(content: Text("Ambang batas otomasi dan pengaturan zona berhasil diperbarui!"), backgroundColor: utamaHijau),
                               );
                             }
                           } catch (e) {
                             setModalState(() { isSubmitting = false; });
                             if (ctx.mounted) {
-                              ScaffoldMessenger.of(ctx).showSnackBar(
+                              ScaffoldMessenger.of(ctx)..clearSnackBars()..showSnackBar(
                                 SnackBar(content: Text("Gagal: ${e.toString().replaceAll('Exception: ', '')}"), backgroundColor: Colors.red),
                               );
                             }
@@ -571,13 +572,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
                               try {
                                 await _apiService.controlPump(zoneId, "ON");
                                 if (context.mounted) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
+                                  ScaffoldMessenger.of(context)..clearSnackBars()..showSnackBar(
                                     const SnackBar(content: Text("Instruksi NYALAKAN pompa berhasil dikirim ke ESP32!"), backgroundColor: Colors.green),
                                   );
                                 }
                               } catch (e) {
                                 if (context.mounted) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
+                                  ScaffoldMessenger.of(context)..clearSnackBars()..showSnackBar(
                                     SnackBar(content: Text("Gagal: ${e.toString().replaceAll('Exception: ', '')}"), backgroundColor: Colors.red),
                                   );
                                 }
@@ -600,13 +601,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
                               try {
                                 await _apiService.controlPump(zoneId, "OFF");
                                 if (context.mounted) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
+                                  ScaffoldMessenger.of(context)..clearSnackBars()..showSnackBar(
                                     const SnackBar(content: Text("Instruksi MATIKAN pompa berhasil dikirim ke ESP32!"), backgroundColor: Colors.red),
                                   );
                                 }
                               } catch (e) {
                                 if (context.mounted) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
+                                  ScaffoldMessenger.of(context)..clearSnackBars()..showSnackBar(
                                     SnackBar(content: Text("Gagal: ${e.toString().replaceAll('Exception: ', '')}"), backgroundColor: Colors.red),
                                   );
                                 }
@@ -741,7 +742,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         ),
                         onPressed: isSubmitting ? null : () async {
                           if (namaCtrl.text.isEmpty || macCtrl.text.isEmpty) {
-                            ScaffoldMessenger.of(context).showSnackBar(
+                            ScaffoldMessenger.of(context)..clearSnackBars()..showSnackBar(
                               const SnackBar(content: Text("Nama Zona dan MAC Address wajib diisi!"), backgroundColor: Colors.red),
                             );
                             return;
@@ -757,7 +758,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             );
                             if (ctx.mounted) Navigator.pop(ctx);
                             if (context.mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(
+                              ScaffoldMessenger.of(context)..clearSnackBars()..showSnackBar(
                                 SnackBar(
                                   content: Text("Sukses! '${namaCtrl.text}' berhasil terikat dengan alat ${macCtrl.text}"),
                                   backgroundColor: utamaHijau,
@@ -767,7 +768,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           } catch (e) {
                             setModalState(() { isSubmitting = false; });
                             if (ctx.mounted) {
-                              ScaffoldMessenger.of(ctx).showSnackBar(
+                              ScaffoldMessenger.of(ctx)..clearSnackBars()..showSnackBar(
                                 SnackBar(content: Text("Error: ${e.toString().replaceAll('Exception: ', '')}"), backgroundColor: Colors.red),
                               );
                             }
@@ -899,7 +900,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         style: ElevatedButton.styleFrom(backgroundColor: utamaHijau, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
                         onPressed: isSubmitting ? null : () async {
                           if (emailCtrl.text.isEmpty || userCtrl.text.isEmpty || pwdCtrl.text.isEmpty) {
-                            ScaffoldMessenger.of(context).showSnackBar(
+                            ScaffoldMessenger.of(context)..clearSnackBars()..showSnackBar(
                               const SnackBar(content: Text("Semua kolom (Email, Username, Password) wajib diisi!"), backgroundColor: Colors.red),
                             );
                             return;
@@ -914,14 +915,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             );
                             if (ctx.mounted) Navigator.pop(ctx);
                             if (context.mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(
+                              ScaffoldMessenger.of(context)..clearSnackBars()..showSnackBar(
                                 SnackBar(content: Text("Akun '${userCtrl.text}' berhasil dibuat! User dapat merubah password setelah login."), backgroundColor: utamaHijau),
                               );
                             }
                           } catch (e) {
                             setModalState(() { isSubmitting = false; });
                             if (ctx.mounted) {
-                              ScaffoldMessenger.of(ctx).showSnackBar(
+                              ScaffoldMessenger.of(ctx)..clearSnackBars()..showSnackBar(
                                 SnackBar(content: Text("Gagal: ${e.toString().replaceAll('Exception: ', '')}"), backgroundColor: Colors.red),
                               );
                             }
@@ -1037,13 +1038,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         style: ElevatedButton.styleFrom(backgroundColor: Colors.blue.shade700, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
                         onPressed: isSubmitting ? null : () async {
                           if (lamaCtrl.text.isEmpty || baruCtrl.text.isEmpty || konfirmasiCtrl.text.isEmpty) {
-                            ScaffoldMessenger.of(context).showSnackBar(
+                            ScaffoldMessenger.of(context)..clearSnackBars()..showSnackBar(
                               const SnackBar(content: Text("Semua kolom password wajib diisi!"), backgroundColor: Colors.red),
                             );
                             return;
                           }
                           if (baruCtrl.text != konfirmasiCtrl.text) {
-                            ScaffoldMessenger.of(context).showSnackBar(
+                            ScaffoldMessenger.of(context)..clearSnackBars()..showSnackBar(
                               const SnackBar(content: Text("Konfirmasi password baru tidak cocok!"), backgroundColor: Colors.red),
                             );
                             return;
@@ -1053,14 +1054,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             await _apiService.changePassword(oldPassword: lamaCtrl.text, newPassword: baruCtrl.text);
                             if (ctx.mounted) Navigator.pop(ctx);
                             if (context.mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(
+                              ScaffoldMessenger.of(context)..clearSnackBars()..showSnackBar(
                                 const SnackBar(content: Text("Password berhasil diganti secara rahasia!"), backgroundColor: Colors.green),
                               );
                             }
                           } catch (e) {
                             setModalState(() { isSubmitting = false; });
                             if (ctx.mounted) {
-                              ScaffoldMessenger.of(ctx).showSnackBar(
+                              ScaffoldMessenger.of(ctx)..clearSnackBars()..showSnackBar(
                                 SnackBar(content: Text("Gagal: ${e.toString().replaceAll('Exception: ', '')}"), backgroundColor: Colors.red),
                               );
                             }
@@ -1246,7 +1247,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           await Clipboard.setData(ClipboardData(text: csvData));
                           if (ctx.mounted) Navigator.pop(ctx);
                           if (context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
+                            ScaffoldMessenger.of(context)..clearSnackBars()..showSnackBar(
                               const SnackBar(
                                 content: Text("📋 Berhasil disalin! Tinggal Paste di Excel, WhatsApp, atau Google Sheets Anda."),
                                 backgroundColor: Colors.green,
@@ -1257,7 +1258,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         } catch (e) {
                           setModalState(() { isDownloading = false; });
                           if (ctx.mounted) {
-                            ScaffoldMessenger.of(ctx).showSnackBar(
+                            ScaffoldMessenger.of(ctx)..clearSnackBars()..showSnackBar(
                               SnackBar(content: Text("Gagal mengunduh: ${e.toString().replaceAll('Exception: ', '')}"), backgroundColor: Colors.red),
                             );
                           }

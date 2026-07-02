@@ -43,13 +43,14 @@ class _LoginScreenState extends State<LoginScreen> {
       setState(() { _isLoading = false; }); 
 
       if (isSuccess && mounted) {
+        ScaffoldMessenger.of(context).clearSnackBars();
         Navigator.pushReplacement(
           context, 
           MaterialPageRoute(builder: (context) => DashboardScreen(isAdmin: SessionManager.isAdmin))
         );
       } else {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
+          ScaffoldMessenger.of(context)..clearSnackBars()..showSnackBar(
             const SnackBar(
               content: Text('Login Gagal! Periksa kembali Username dan Password.'),
               backgroundColor: Colors.red,
@@ -60,7 +61,7 @@ class _LoginScreenState extends State<LoginScreen> {
     } catch (e) {
       setState(() { _isLoading = false; });
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
+        ScaffoldMessenger.of(context)..clearSnackBars()..showSnackBar(
           SnackBar(
             content: Text('Error: ${e.toString().replaceAll("Exception: ", "")}'), 
             backgroundColor: Colors.red,
