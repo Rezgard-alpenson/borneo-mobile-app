@@ -242,4 +242,23 @@ class ApiService {
       throw Exception("Error mengambil laporan: $e");
     }
   }
+
+  // --- FITUR BARU: GRAFIK RIWAYAT SENSOR TIME-SERIES ---
+  Future<List<SensorData>> fetchSensorHistory(int zoneId) async {
+    try {
+      final response = await http.get(
+        Uri.parse(ApiConfig.getSensorHistory(zoneId)),
+        headers: SessionManager.headers,
+      );
+      if (response.statusCode == 200) {
+        final List<dynamic> dataList = jsonDecode(response.body);
+        return dataList.map((json) => SensorData.fromJson(json)).toList();
+      } else {
+        throw Exception("Gagal memuat riwayat sensor");
+      }
+    } catch (e) {
+      print(">>> ERROR FETCH HISTORY: $e <<<");
+      return [];
+    }
+  }
 }

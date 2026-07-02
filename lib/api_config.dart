@@ -21,4 +21,5 @@ class ApiConfig {
   static String get changePassword => "$baseUrl/api/users/change-password";
   static String getZoneAlerts(int zoneId) => "$baseUrl/api/zones/$zoneId/alerts";
   static String exportSensorData(int zoneId) => "$baseUrl/api/zones/$zoneId/export/sensor";
+  static String getSensorHistory(int zoneId) => "$baseUrl/api/zones/$zoneId/sensor/history";
 }

@@ -200,6 +200,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           onPressed: () => _tampilkanPusatNotifikasi(context, 1, namaZona),
                         ),
                         IconButton(
+                          icon: const Icon(Icons.show_chart_rounded, color: Colors.purple, size: 22),
+                          tooltip: "Grafik Riwayat Time-Series",
+                          onPressed: () => _tampilkanDialogGrafik(context, 1, namaZona),
+                        ),
+                        IconButton(
                           icon: const Icon(Icons.analytics_rounded, color: Colors.blue, size: 22),
                           tooltip: "Laporan & Analisa Panen",
                           onPressed: () => _tampilkanDialogLaporan(context, 1, namaZona),
@@ -1252,4 +1257,176 @@ class _DashboardScreenState extends State<DashboardScreen> {
       },
     );
   }
+
+  // --- FITUR BARU: GRAFIK RIWAYAT TIME-SERIES ---
+  void _tampilkanDialogGrafik(BuildContext context, int zoneId, String namaZona) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+      builder: (ctx) {
+        return Container(
+          padding: const EdgeInsets.all(24),
+          height: MediaQuery.of(context).size.height * 0.75,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Row(
+                    children: [
+                      const Icon(Icons.show_chart_rounded, color: Colors.purple, size: 28),
+                      const SizedBox(width: 12),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text("Grafik Riwayat Sensor", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                          Text("$namaZona (20 Data Terakhir)", style: const TextStyle(fontSize: 12, color: Colors.black54)),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                  IconButton(icon: const Icon(Icons.close_rounded), onPressed: () => Navigator.pop(ctx)),
+                ],
+              ),
+              const Divider(height: 24),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: [
+                  Row(children: [Container(width: 12, height: 12, decoration: const BoxDecoration(color: Colors.green, shape: BoxShape.circle)), const SizedBox(width: 6), const Text("Kelembapan Tanah (%)", style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold))]),
+                  Row(children: [Container(width: 12, height: 12, decoration: const BoxDecoration(color: Colors.orange, shape: BoxShape.circle)), const SizedBox(width: 6), const Text("Suhu Udara (°C)", style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold))]),
+                ],
+              ),
+              const SizedBox(height: 16),
+              Expanded(
+                child: FutureBuilder<List<SensorData>>(
+                  future: _apiService.fetchSensorHistory(zoneId),
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return const Center(child: CircularProgressIndicator(color: Colors.purple));
+                    } else if (snapshot.hasError) {
+                      return Center(child: Text("Gagal memuat grafik: ${snapshot.error}", style: const TextStyle(color: Colors.red)));
+                    } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                      return const Center(child: Text("Belum ada riwayat data sensor."));
+                    }
+
+                    final dataList = snapshot.data!;
+                    return Column(
+                      children: [
+                        // KANVAS GRAFIK TIME-SERIES
+                        Container(
+                          height: 180,
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(color: Colors.purple.shade100),
+                            boxShadow: [BoxShadow(color: Colors.purple.withOpacity(0.05), blurRadius: 10)],
+                          ),
+                          child: CustomPaint(
+                            painter: SensorChartPainter(dataList),
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        const Align(
+                          alignment: Alignment.centerLeft,
+                          child: Text("📋 Catatan Riwayat Waktu Nyata:", style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.black87)),
+                        ),
+                        const SizedBox(height: 8),
+                        // DAFTAR TABEL RIWAYAT
+                        Expanded(
+                          child: ListView.separated(
+                            itemCount: dataList.length,
+                            separatorBuilder: (_, __) => const Divider(height: 1),
+                            itemBuilder: (context, index) {
+                              // Tampilkan urutan dari yang terbaru ke terlama di list
+                              final item = dataList[dataList.length - 1 - index];
+                              return ListTile(
+                                contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                leading: CircleAvatar(
+                                  radius: 18,
+                                  backgroundColor: item.kelembapanTanah < 40 ? Colors.red.shade100 : Colors.green.shade100,
+                                  child: Icon(Icons.water_drop, size: 18, color: item.kelembapanTanah < 40 ? Colors.red : Colors.green),
+                                ),
+                                title: Text("Tanah: ${item.kelembapanTanah}% | Suhu: ${item.suhuUdara}°C", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                                subtitle: Text("Waktu: ${item.waktuRekam} | pH: ${item.phTanah} | Hujan: ${item.statusHujan ? 'Ya' : 'Tidak'}", style: const TextStyle(fontSize: 11, color: Colors.black54)),
+                                trailing: Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                  decoration: BoxDecoration(color: Colors.purple.shade50, borderRadius: BorderRadius.circular(8)),
+                                  child: Text("${item.debitAir} L/m", style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.purple.shade700)),
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                      ],
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+// KELAS PELUKIS GRAFIK (NATIVE FLUTTER CUSTOM PAINTER)
+class SensorChartPainter extends CustomPainter {
+  final List<SensorData> data;
+  SensorChartPainter(this.data);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (data.isEmpty) return;
+
+    final gridPaint = Paint()..color = Colors.grey.shade200..strokeWidth = 1;
+    // Gambar garis grid horisontal
+    for (int i = 0; i <= 4; i++) {
+      final y = size.height * (i / 4);
+      canvas.drawLine(Offset(0, y), Offset(size.width, y), gridPaint);
+    }
+
+    final soilPaint = Paint()..color = Colors.green..strokeWidth = 3..style = PaintingStyle.stroke..strokeCap = StrokeCap.round;
+    final tempPaint = Paint()..color = Colors.orange..strokeWidth = 2.5..style = PaintingStyle.stroke..strokeCap = StrokeCap.round;
+    final soilDotPaint = Paint()..color = Colors.green..style = PaintingStyle.fill;
+    final tempDotPaint = Paint()..color = Colors.orange..style = PaintingStyle.fill;
+
+    final soilPath = Path();
+    final tempPath = Path();
+
+    final n = data.length;
+    for (int i = 0; i < n; i++) {
+      final x = n > 1 ? (i / (n - 1)) * size.width : size.width / 2;
+      
+      // Kelembapan Tanah (skala 0 - 100%)
+      final soilVal = data[i].kelembapanTanah.clamp(0.0, 100.0);
+      final ySoil = size.height - (soilVal / 100.0) * size.height;
+
+      // Suhu Udara (skala 0 - 50°C)
+      final tempVal = data[i].suhuUdara.clamp(0.0, 50.0);
+      final yTemp = size.height - (tempVal / 50.0) * size.height;
+
+      if (i == 0) {
+        soilPath.moveTo(x, ySoil);
+        tempPath.moveTo(x, yTemp);
+      } else {
+        soilPath.lineTo(x, ySoil);
+        tempPath.lineTo(x, yTemp);
+      }
+
+      canvas.drawCircle(Offset(x, ySoil), 3.5, soilDotPaint);
+      canvas.drawCircle(Offset(x, yTemp), 3, tempDotPaint);
+    }
+
+    canvas.drawPath(soilPath, soilPaint);
+    canvas.drawPath(tempPath, tempPaint);
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
 }
