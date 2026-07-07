@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import '../services/api_service.dart';
 import '../models/sensor_model.dart';
 import 'login_screen.dart';
+import '../widgets/top_snackbar.dart';
 
 // Konstanta warna dari desain Sempro Anda
 const Color utamaHijau = Color(0xFF1B5E20);
@@ -299,15 +300,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           try {
                             await _apiService.controlPump(1, val ? "ON" : "OFF");
                             if (context.mounted) {
-                              ScaffoldMessenger.of(context)..clearSnackBars()..showSnackBar(
-                                SnackBar(content: Text("Instruksi pompa ${val ? 'ON' : 'OFF'} dikirim via MQTT!"), backgroundColor: utamaHijau),
-                              );
+                              TopSnackBar.show(context, "Instruksi pompa ${val ? 'ON' : 'OFF'} dikirim via MQTT!");
                             }
                           } catch (e) {
                             if (context.mounted) {
-                              ScaffoldMessenger.of(context)..clearSnackBars()..showSnackBar(
-                                SnackBar(content: Text("Gagal: ${e.toString().replaceAll('Exception: ', '')}"), backgroundColor: Colors.red),
-                              );
+                              TopSnackBar.show(context, "Gagal: ${e.toString().replaceAll('Exception: ', '')}", isError: true);
                             }
                           }
                         },
@@ -484,9 +481,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           final b = double.tryParse(bawahCtrl.text.trim()) ?? 40.0;
                           final a = double.tryParse(atasCtrl.text.trim()) ?? 80.0;
                           if (b >= a) {
-                            ScaffoldMessenger.of(context)..clearSnackBars()..showSnackBar(
-                              const SnackBar(content: Text("Batas bawah harus lebih kecil dari batas atas!"), backgroundColor: Colors.red),
-                            );
+                            TopSnackBar.show(context, "Batas bawah harus lebih kecil dari batas atas!", isError: true);
                             return;
                           }
 
@@ -533,16 +528,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             if (ctx.mounted) Navigator.pop(ctx);
                             _refreshData(); // Segarkan UI agar threshold baru muncul
                             if (context.mounted) {
-                              ScaffoldMessenger.of(context)..clearSnackBars()..showSnackBar(
-                                const SnackBar(content: Text("Ambang batas otomasi dan pengaturan zona berhasil diperbarui!"), backgroundColor: utamaHijau),
-                              );
+                              TopSnackBar.show(context, "Ambang batas otomasi dan pengaturan zona berhasil diperbarui!");
                             }
                           } catch (e) {
                             setModalState(() { isSubmitting = false; });
                             if (ctx.mounted) {
-                              ScaffoldMessenger.of(ctx)..clearSnackBars()..showSnackBar(
-                                SnackBar(content: Text("Gagal: ${e.toString().replaceAll('Exception: ', '')}"), backgroundColor: Colors.red),
-                              );
+                              TopSnackBar.show(ctx, "Gagal: ${e.toString().replaceAll('Exception: ', '')}", isError: true);
                             }
                           }
                         },
@@ -572,15 +563,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
                               try {
                                 await _apiService.controlPump(zoneId, "ON");
                                 if (context.mounted) {
-                                  ScaffoldMessenger.of(context)..clearSnackBars()..showSnackBar(
-                                    const SnackBar(content: Text("Instruksi NYALAKAN pompa berhasil dikirim ke ESP32!"), backgroundColor: Colors.green),
-                                  );
+                                  TopSnackBar.show(context, "Instruksi NYALAKAN pompa berhasil dikirim ke ESP32!");
                                 }
                               } catch (e) {
                                 if (context.mounted) {
-                                  ScaffoldMessenger.of(context)..clearSnackBars()..showSnackBar(
-                                    SnackBar(content: Text("Gagal: ${e.toString().replaceAll('Exception: ', '')}"), backgroundColor: Colors.red),
-                                  );
+                                  TopSnackBar.show(context, "Gagal: ${e.toString().replaceAll('Exception: ', '')}", isError: true);
                                 }
                               }
                             },
@@ -601,15 +588,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
                               try {
                                 await _apiService.controlPump(zoneId, "OFF");
                                 if (context.mounted) {
-                                  ScaffoldMessenger.of(context)..clearSnackBars()..showSnackBar(
-                                    const SnackBar(content: Text("Instruksi MATIKAN pompa berhasil dikirim ke ESP32!"), backgroundColor: Colors.red),
-                                  );
+                                  TopSnackBar.show(context, "Instruksi MATIKAN pompa berhasil dikirim ke ESP32!", isError: true);
                                 }
                               } catch (e) {
                                 if (context.mounted) {
-                                  ScaffoldMessenger.of(context)..clearSnackBars()..showSnackBar(
-                                    SnackBar(content: Text("Gagal: ${e.toString().replaceAll('Exception: ', '')}"), backgroundColor: Colors.red),
-                                  );
+                                  TopSnackBar.show(context, "Gagal: ${e.toString().replaceAll('Exception: ', '')}", isError: true);
                                 }
                               }
                             },
@@ -742,9 +725,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         ),
                         onPressed: isSubmitting ? null : () async {
                           if (namaCtrl.text.isEmpty || macCtrl.text.isEmpty) {
-                            ScaffoldMessenger.of(context)..clearSnackBars()..showSnackBar(
-                              const SnackBar(content: Text("Nama Zona dan MAC Address wajib diisi!"), backgroundColor: Colors.red),
-                            );
+                            TopSnackBar.show(context, "Nama Zona dan MAC Address wajib diisi!", isError: true);
                             return;
                           }
                           setModalState(() { isSubmitting = true; });
@@ -758,19 +739,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             );
                             if (ctx.mounted) Navigator.pop(ctx);
                             if (context.mounted) {
-                              ScaffoldMessenger.of(context)..clearSnackBars()..showSnackBar(
-                                SnackBar(
-                                  content: Text("Sukses! '${namaCtrl.text}' berhasil terikat dengan alat ${macCtrl.text}"),
-                                  backgroundColor: utamaHijau,
-                                ),
-                              );
+                              TopSnackBar.show(context, "Sukses! '${namaCtrl.text}' berhasil terikat dengan alat ${macCtrl.text}");
                             }
                           } catch (e) {
                             setModalState(() { isSubmitting = false; });
                             if (ctx.mounted) {
-                              ScaffoldMessenger.of(ctx)..clearSnackBars()..showSnackBar(
-                                SnackBar(content: Text("Error: ${e.toString().replaceAll('Exception: ', '')}"), backgroundColor: Colors.red),
-                              );
+                              TopSnackBar.show(ctx, "Error: ${e.toString().replaceAll('Exception: ', '')}", isError: true);
                             }
                           }
                         },
@@ -900,9 +874,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         style: ElevatedButton.styleFrom(backgroundColor: utamaHijau, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
                         onPressed: isSubmitting ? null : () async {
                           if (emailCtrl.text.isEmpty || userCtrl.text.isEmpty || pwdCtrl.text.isEmpty) {
-                            ScaffoldMessenger.of(context)..clearSnackBars()..showSnackBar(
-                              const SnackBar(content: Text("Semua kolom (Email, Username, Password) wajib diisi!"), backgroundColor: Colors.red),
-                            );
+                            TopSnackBar.show(context, "Semua kolom (Email, Username, Password) wajib diisi!", isError: true);
                             return;
                           }
                           setModalState(() { isSubmitting = true; });
@@ -915,16 +887,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             );
                             if (ctx.mounted) Navigator.pop(ctx);
                             if (context.mounted) {
-                              ScaffoldMessenger.of(context)..clearSnackBars()..showSnackBar(
-                                SnackBar(content: Text("Akun '${userCtrl.text}' berhasil dibuat! User dapat merubah password setelah login."), backgroundColor: utamaHijau),
-                              );
+                              TopSnackBar.show(context, "Akun '${userCtrl.text}' berhasil dibuat! User dapat merubah password setelah login.");
                             }
                           } catch (e) {
                             setModalState(() { isSubmitting = false; });
                             if (ctx.mounted) {
-                              ScaffoldMessenger.of(ctx)..clearSnackBars()..showSnackBar(
-                                SnackBar(content: Text("Gagal: ${e.toString().replaceAll('Exception: ', '')}"), backgroundColor: Colors.red),
-                              );
+                              TopSnackBar.show(ctx, "Gagal: ${e.toString().replaceAll('Exception: ', '')}", isError: true);
                             }
                           }
                         },
@@ -1038,15 +1006,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         style: ElevatedButton.styleFrom(backgroundColor: Colors.blue.shade700, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
                         onPressed: isSubmitting ? null : () async {
                           if (lamaCtrl.text.isEmpty || baruCtrl.text.isEmpty || konfirmasiCtrl.text.isEmpty) {
-                            ScaffoldMessenger.of(context)..clearSnackBars()..showSnackBar(
-                              const SnackBar(content: Text("Semua kolom password wajib diisi!"), backgroundColor: Colors.red),
-                            );
+                            TopSnackBar.show(context, "Semua kolom password wajib diisi!", isError: true);
                             return;
                           }
                           if (baruCtrl.text != konfirmasiCtrl.text) {
-                            ScaffoldMessenger.of(context)..clearSnackBars()..showSnackBar(
-                              const SnackBar(content: Text("Konfirmasi password baru tidak cocok!"), backgroundColor: Colors.red),
-                            );
+                            TopSnackBar.show(context, "Konfirmasi password baru tidak cocok!", isError: true);
                             return;
                           }
                           setModalState(() { isSubmitting = true; });
@@ -1054,16 +1018,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             await _apiService.changePassword(oldPassword: lamaCtrl.text, newPassword: baruCtrl.text);
                             if (ctx.mounted) Navigator.pop(ctx);
                             if (context.mounted) {
-                              ScaffoldMessenger.of(context)..clearSnackBars()..showSnackBar(
-                                const SnackBar(content: Text("Password berhasil diganti secara rahasia!"), backgroundColor: Colors.green),
-                              );
+                              TopSnackBar.show(context, "Password berhasil diganti secara rahasia!");
                             }
                           } catch (e) {
                             setModalState(() { isSubmitting = false; });
                             if (ctx.mounted) {
-                              ScaffoldMessenger.of(ctx)..clearSnackBars()..showSnackBar(
-                                SnackBar(content: Text("Gagal: ${e.toString().replaceAll('Exception: ', '')}"), backgroundColor: Colors.red),
-                              );
+                              TopSnackBar.show(ctx, "Gagal: ${e.toString().replaceAll('Exception: ', '')}", isError: true);
                             }
                           }
                         },
@@ -1247,20 +1207,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           await Clipboard.setData(ClipboardData(text: csvData));
                           if (ctx.mounted) Navigator.pop(ctx);
                           if (context.mounted) {
-                            ScaffoldMessenger.of(context)..clearSnackBars()..showSnackBar(
-                              const SnackBar(
-                                content: Text("📋 Berhasil disalin! Tinggal Paste di Excel, WhatsApp, atau Google Sheets Anda."),
-                                backgroundColor: Colors.green,
-                                duration: Duration(seconds: 4),
-                              ),
-                            );
+                            TopSnackBar.show(context, "📋 Berhasil disalin! Tinggal Paste di Excel, WhatsApp, atau Google Sheets Anda.");
                           }
                         } catch (e) {
                           setModalState(() { isDownloading = false; });
                           if (ctx.mounted) {
-                            ScaffoldMessenger.of(ctx)..clearSnackBars()..showSnackBar(
-                              SnackBar(content: Text("Gagal mengunduh: ${e.toString().replaceAll('Exception: ', '')}"), backgroundColor: Colors.red),
-                            );
+                            TopSnackBar.show(ctx, "Gagal mengunduh: ${e.toString().replaceAll('Exception: ', '')}", isError: true);
                           }
                         }
                       },
