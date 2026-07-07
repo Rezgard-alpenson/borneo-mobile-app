@@ -1,15 +1,57 @@
+import 'package:shared_preferences/shared_preferences.dart';
+
 class ApiConfig {
-  // --- PILIHAN MODE PENGUJIAN SERVER ---
-  
-  // 1. Mode USB Debugging via Kabel USB (Aktifkan ini + jalankan 'adb reverse tcp:8000 tcp:8000' di terminal laptop)
-  // static const String baseUrl = "http://127.0.0.1:8000"; 
-  
-  // 2. Mode Wi-Fi Lokal (Pastikan HP & Laptop terhubung ke Wi-Fi yang sama)
-  static const String baseUrl = "http://192.168.1.8:8000"; 
-  
-  // 3. Mode Server Kampus (Ganti dengan IP / Domain dari Faidil nanti)
-  // static const String baseUrl = "http://IP_SERVER_KAMPUS:8000";
-  
+  // Alamat IP Default (akan ditimpa otomatis jika ada IP yang disimpan pengguna di HP)
+  static String _baseUrl = "http://192.168.1.12:8000"; 
+  static String get baseUrl => _baseUrl;
+
+  // Mengambil angka IP murni (misal: 192.168.1.12) untuk ditampilkan pada input form
+  static String get currentIpOnly {
+    return _baseUrl
+        .replaceAll("http://", "")
+        .replaceAll("https://", "")
+        .replaceAll(":8000", "")
+        .trim();
+  }
+
+  // Memuat IP yang tersimpan di memori HP saat aplikasi dijalankan
+  static Future<void> loadSavedIp() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final savedIp = prefs.getString('server_ip');
+      if (savedIp != null && savedIp.isNotEmpty) {
+        if (savedIp.startsWith("http")) {
+          _baseUrl = savedIp;
+        } else {
+          _baseUrl = "http://$savedIp:8000";
+        }
+        print(">>> [API CONFIG] Berhasil memuat IP server dari memori: $_baseUrl <<<");
+      }
+    } catch (e) {
+      print(">>> [API CONFIG] Gagal memuat IP: $e <<<");
+    }
+  }
+
+  // Menyimpan dan mengubah alamat IP server baru ke SharedPreferences
+  static Future<void> setServerIp(String newIp) async {
+    String formattedIp = newIp.trim();
+    if (!formattedIp.startsWith("http")) {
+      if (!formattedIp.contains(":")) {
+        formattedIp = "http://$formattedIp:8000";
+      } else {
+        formattedIp = "http://$formattedIp";
+      }
+    }
+    _baseUrl = formattedIp;
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('server_ip', formattedIp);
+      print(">>> [API CONFIG] Alamat IP server baru berhasil disimpan: $_baseUrl <<<");
+    } catch (e) {
+      print(">>> [API CONFIG] Gagal menyimpan IP: $e <<<");
+    }
+  }
+
   // Endpoint API
   static String get login => "$baseUrl/api/login"; 
   static String getLatestSensor(int zoneId) => "$baseUrl/api/zones/$zoneId/sensor/latest";

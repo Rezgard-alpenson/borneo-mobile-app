@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'screens/login_screen.dart';
+import 'api_config.dart';
 
 const Color utamaHijau = Color(0xFF1B5E20);
 const Color latarAbu = Color(0xFFF4F7F4);
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await ApiConfig.loadSavedIp();
   runApp(const BorneoApp());
 }
 

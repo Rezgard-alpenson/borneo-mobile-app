@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'dashboard_screen.dart';
 import '../services/api_service.dart';
+import '../api_config.dart';
+import '../widgets/top_snackbar.dart';
 
 const Color utamaHijau = Color(0xFF1B5E20);
 const Color latarAbu = Color(0xFFF4F7F4);
@@ -50,26 +52,78 @@ class _LoginScreenState extends State<LoginScreen> {
         );
       } else {
         if (mounted) {
-          ScaffoldMessenger.of(context)..clearSnackBars()..showSnackBar(
-            const SnackBar(
-              content: Text('Login Gagal! Periksa kembali Username dan Password.'),
-              backgroundColor: Colors.red,
-            )
-          );
+          TopSnackBar.show(context, 'Login Gagal! Periksa kembali Username dan Password.', isError: true);
         }
       }
     } catch (e) {
       setState(() { _isLoading = false; });
       if (mounted) {
-        ScaffoldMessenger.of(context)..clearSnackBars()..showSnackBar(
-          SnackBar(
-            content: Text('Error: ${e.toString().replaceAll("Exception: ", "")}'), 
-            backgroundColor: Colors.red,
-            duration: const Duration(seconds: 4),
-          )
-        );
+        TopSnackBar.show(context, 'Error: ${e.toString().replaceAll("Exception: ", "")}', isError: true);
       }
     }
+  }
+
+  void _showIpSettingsDialog() {
+    final TextEditingController ipCtrl = TextEditingController(text: ApiConfig.currentIpOnly);
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Row(
+          children: [
+            Icon(Icons.settings_ethernet, color: utamaHijau),
+            SizedBox(width: 10),
+            Text('Atur IP Server Wi-Fi', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Masukkan alamat IP laptop/komputer server saat ini:',
+              style: TextStyle(fontSize: 13, color: Colors.grey),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: ipCtrl,
+              decoration: InputDecoration(
+                filled: true,
+                fillColor: latarAbu,
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                hintText: 'Contoh: 192.168.1.12',
+                prefixIcon: const Icon(Icons.wifi, color: utamaHijau),
+              ),
+              keyboardType: TextInputType.text,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Batal', style: TextStyle(color: Colors.grey)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: utamaHijau,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+            onPressed: () async {
+              if (ipCtrl.text.isNotEmpty) {
+                await ApiConfig.setServerIp(ipCtrl.text);
+                if (mounted) {
+                  setState(() {}); // Memperbarui tampilan IP di layar login
+                  Navigator.pop(ctx);
+                  TopSnackBar.show(context, 'IP Server berhasil diubah ke: ${ApiConfig.baseUrl}');
+                }
+              }
+            },
+            child: const Text('Simpan'),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -151,6 +205,15 @@ class _LoginScreenState extends State<LoginScreen> {
                           child: CircularProgressIndicator(color: Colors.white, strokeWidth: 3)
                         )
                       : const Text('MASUK', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, letterSpacing: 1)),
+                  ),
+                  const SizedBox(height: 20),
+                  TextButton.icon(
+                    onPressed: _showIpSettingsDialog,
+                    icon: const Icon(Icons.settings_ethernet, size: 20, color: utamaHijau),
+                    label: Text(
+                      'Atur IP Server Wi-Fi (${ApiConfig.currentIpOnly})',
+                      style: const TextStyle(color: utamaHijau, fontSize: 13, fontWeight: FontWeight.bold),
+                    ),
                   ),
                 ],
               ),
