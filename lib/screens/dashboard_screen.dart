@@ -177,54 +177,63 @@ class _DashboardScreenState extends State<DashboardScreen> {
             child: Column(
               children: [
                 Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    const Icon(Icons.grid_view_rounded, color: utamaHijau, size: 24),
+                    const SizedBox(width: 10),
                     Expanded(
-                      child: Row(
-                        children: [
-                          const Icon(Icons.grid_view_rounded, color: utamaHijau, size: 24),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: Text(
-                              namaZona,
-                              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                        ],
+                      child: Text(
+                        namaZona,
+                        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, height: 1.2),
+                        maxLines: 3,
+                        overflow: TextOverflow.visible,
                       ),
                     ),
-                    Row(
-                      children: [
-                        IconButton(
-                          icon: const Icon(Icons.notifications_active_rounded, color: Colors.orange, size: 22),
-                          tooltip: "Pusat Peringatan Dini",
-                          onPressed: () => _tampilkanPusatNotifikasi(context, 1, namaZona),
-                        ),
-                        IconButton(
-                          icon: const Icon(Icons.show_chart_rounded, color: Colors.purple, size: 22),
-                          tooltip: "Grafik Riwayat Time-Series",
-                          onPressed: () => _tampilkanDialogGrafik(context, 1, namaZona),
-                        ),
-                        IconButton(
-                          icon: const Icon(Icons.analytics_rounded, color: Colors.blue, size: 22),
-                          tooltip: "Laporan & Analisa Panen",
-                          onPressed: () => _tampilkanDialogLaporan(context, 1, namaZona),
-                        ),
-                        if (widget.isAdmin)
-                          IconButton(
-                            icon: const Icon(Icons.tune_rounded, color: utamaHijau, size: 22),
-                            tooltip: "Atur Batas Otomasi (Threshold)",
-                            onPressed: () => _tampilkanDialogAturThreshold(context, 1, namaZona, batasBawah, batasAtas, macAddress),
-                          ),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                          decoration: BoxDecoration(color: Colors.green.shade50, borderRadius: BorderRadius.circular(12)),
-                          child: const Text('Pompa OFF', style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold, fontSize: 12)),
-                        ),
-                      ],
+                    const SizedBox(width: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                      decoration: BoxDecoration(color: Colors.green.shade50, borderRadius: BorderRadius.circular(12)),
+                      child: const Text('Pompa OFF', style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold, fontSize: 12)),
                     ),
                   ],
+                ),
+                const SizedBox(height: 12),
+                // --- ACTION BAR TOOLBAR FITUR PER ZONA ---
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    children: [
+                      _buildActionChip(
+                        icon: Icons.notifications_active_rounded,
+                        color: Colors.orange,
+                        label: "Peringatan",
+                        onTap: () => _tampilkanPusatNotifikasi(context, 1, namaZona),
+                      ),
+                      const SizedBox(width: 8),
+                      _buildActionChip(
+                        icon: Icons.show_chart_rounded,
+                        color: Colors.purple,
+                        label: "Grafik",
+                        onTap: () => _tampilkanDialogGrafik(context, 1, namaZona),
+                      ),
+                      const SizedBox(width: 8),
+                      _buildActionChip(
+                        icon: Icons.analytics_rounded,
+                        color: Colors.blue,
+                        label: "Laporan",
+                        onTap: () => _tampilkanDialogLaporan(context, 1, namaZona),
+                      ),
+                      if (widget.isAdmin) ...[
+                        const SizedBox(width: 8),
+                        _buildActionChip(
+                          icon: Icons.tune_rounded,
+                          color: utamaHijau,
+                          label: "Atur Batas",
+                          onTap: () => _tampilkanDialogAturThreshold(context, 1, namaZona, batasBawah, batasAtas, macAddress),
+                        ),
+                      ],
+                    ],
+                  ),
                 ),
                 const SizedBox(height: 12),
                 // --- INFORMASI THRESHOLD ZONA (HASIL REVISI SEMPRO) ---
@@ -317,6 +326,29 @@ class _DashboardScreenState extends State<DashboardScreen> {
           ),
         );
       },
+    );
+  }
+
+  Widget _buildActionChip({required IconData icon, required Color color, required String label, required VoidCallback onTap}) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(10),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        decoration: BoxDecoration(
+          color: color.withOpacity(0.08),
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: color.withOpacity(0.3)),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, color: color, size: 16),
+            const SizedBox(width: 5),
+            Text(label, style: TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: 11)),
+          ],
+        ),
+      ),
     );
   }
 
