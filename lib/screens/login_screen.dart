@@ -58,7 +58,7 @@ class _LoginScreenState extends State<LoginScreen> {
     } catch (e) {
       setState(() { _isLoading = false; });
       if (mounted) {
-        TopSnackBar.show(context, 'Error: ${e.toString().replaceAll("Exception: ", "")}', isError: true);
+        TopSnackBar.show(context, e.toString().replaceAll("Exception: ", ""), isError: true, duration: const Duration(seconds: 5));
       }
     }
   }

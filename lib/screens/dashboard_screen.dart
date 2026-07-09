@@ -101,30 +101,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
       body: ListView(
         padding: const EdgeInsets.all(20.0),
         children: [
-          // Widget Cuaca (Statik dari desain Anda)
-          Container(
-            padding: const EdgeInsets.all(20.0),
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(colors: [Color(0xFF2E7D32), Color(0xFF66BB6A)]),
-              borderRadius: BorderRadius.circular(24),
-            ),
-            child: const Row(
-              children: [
-                Icon(Icons.wb_sunny_rounded, size: 50, color: Colors.amberAccent),
-                SizedBox(width: 20),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('Cuaca Saat Ini', style: TextStyle(color: Colors.white70)),
-                      Text('Cerah Berkabut', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white)),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 20),
           const Text('Monitoring Zona Real-Time', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
           const SizedBox(height: 16),
           
@@ -278,6 +254,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   children: [
                     _infoSensor(Icons.water_drop_outlined, 'Tanah', '${data.kelembapanTanah}%', Colors.blue),
                     _infoSensor(Icons.thermostat_outlined, 'Suhu', '${data.suhuUdara}°C', Colors.orange),
+                    _infoSensor(Icons.air_rounded, 'Kelembapan', '${data.kelembapanUdara}%', Colors.cyan),
                     _infoSensor(Icons.science_outlined, 'pH', '${data.phTanah}', Colors.purple),
                   ],
                 ),
@@ -1355,7 +1332,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                   backgroundColor: item.kelembapanTanah < 40 ? Colors.red.shade100 : Colors.green.shade100,
                                   child: Icon(Icons.water_drop, size: 18, color: item.kelembapanTanah < 40 ? Colors.red : Colors.green),
                                 ),
-                                title: Text("Tanah: ${item.kelembapanTanah}% | Suhu: ${item.suhuUdara}°C", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                                title: Text("Tanah: ${item.kelembapanTanah}% | Suhu: ${item.suhuUdara}°C | Udara: ${item.kelembapanUdara}%", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
                                 subtitle: Text("Waktu: ${item.waktuRekam} | pH: ${item.phTanah} | Hujan: ${item.statusHujan ? 'Ya' : 'Tidak'}", style: const TextStyle(fontSize: 11, color: Colors.black54)),
                                 trailing: Container(
                                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
