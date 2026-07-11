@@ -630,8 +630,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         ),
                       ],
                     ),
-                    const SizedBox(height: 8),
-                    const Text("Sesuai revisi Sempro: Logika pengairan dan ambang batas dieksekusi secara independen per zona.", style: TextStyle(fontSize: 12, color: Colors.black54)),
                     const Divider(height: 24),
                     
                     // --- FIELD NAMA ZONA ---
