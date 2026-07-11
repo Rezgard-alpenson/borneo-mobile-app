@@ -807,9 +807,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       ),
                     ),
                     const Divider(height: 32),
-                    const Text("🔒 Pengaman Akses Air ke Zona 1", style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.red)),
-                    const SizedBox(height: 4),
-                    const Text("Tutup akses air saat terjadi kerusakan sensor agar sistem tidak menyiram terus menerus yang dapat membanjiri lahan.", style: TextStyle(fontSize: 12, color: Colors.black54)),
+                    Text("🔒 Pengaman Akses Air ke $namaZona", style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.red)),
                     const SizedBox(height: 12),
                     Container(
                       padding: const EdgeInsets.all(12),
@@ -867,8 +865,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                   TopSnackBar.show(
                                     context,
                                     val
-                                        ? "✅ Akses air ke Zona 1 DIBUKA (Sistem kembali normal)"
-                                        : "🛑 Akses air ke Zona 1 DITUTUP (Aliran air diputus total)",
+                                        ? "✅ Akses air ke $namaZona DIBUKA (Sistem kembali normal)"
+                                        : "🛑 Akses air ke $namaZona DITUTUP (Aliran air diputus total)",
                                     isError: !val,
                                   );
                                 }
