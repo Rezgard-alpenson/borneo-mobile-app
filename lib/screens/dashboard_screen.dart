@@ -24,23 +24,45 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Future<Map<String, dynamic>>? _zoneConfig;
   bool _isAksesAirTerbuka = true; // Akses Air ke Zona (BUKA / TUTUP)
   bool _isSiramSaatIni = false; // Status Siram Saat Ini (Aktif / Nonaktif)
+  int _sisaDetikSiram = 0; // Hitung mundur penyiraman manual (Detik)
   Timer? _autoOffTimer; // Timer otomatis 1 Menit (60 Detik)
+  Timer? _countdownTimer; // Timer per detik untuk update UI
 
   @override
   void dispose() {
     _autoOffTimer?.cancel();
+    _countdownTimer?.cancel();
     super.dispose();
   }
 
-  // Mengaktifkan siram saat ini selama 1 Menit (60 Detik)
+  // Mengaktifkan siram saat ini selama 1 Menit (60 Detik) beserta hitung mundur
   void _mulaiTimerPenyiramanOtomatis() {
     _autoOffTimer?.cancel();
+    _countdownTimer?.cancel();
+    setState(() {
+      _sisaDetikSiram = 60;
+    });
+
+    _countdownTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (!mounted) {
+        timer.cancel();
+        return;
+      }
+      setState(() {
+        if (_sisaDetikSiram > 0) {
+          _sisaDetikSiram--;
+        }
+      });
+    });
+
     _autoOffTimer = Timer(const Duration(seconds: 60), () async {
+      _countdownTimer?.cancel();
       try {
         await _apiService.controlPump(1, "OFF");
         if (mounted) {
           setState(() {
             _isSiramSaatIni = false;
+            _sisaDetikSiram = 0;
           });
           TopSnackBar.show(
             context,
@@ -52,6 +74,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         if (mounted) {
           setState(() {
             _isSiramSaatIni = false;
+            _sisaDetikSiram = 0;
           });
         }
       }
@@ -346,19 +369,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         label: "Grafik",
                         onTap: () => _tampilkanDialogGrafik(context, 1, namaZona),
                       ),
-                      const SizedBox(width: 8),
-                      _buildActionChip(
-                        icon: Icons.analytics_rounded,
-                        color: Colors.blue,
-                        label: "Laporan",
-                        onTap: () => _tampilkanDialogLaporan(context, 1, namaZona),
-                      ),
                       if (widget.isAdmin) ...[
                         const SizedBox(width: 8),
                         _buildActionChip(
-                          icon: Icons.tune_rounded,
+                          icon: Icons.settings_rounded,
                           color: utamaHijau,
-                          label: "Atur Batas",
+                          label: "Pengaturan",
                           onTap: () => _tampilkanDialogAturThreshold(context, 1, namaZona, batasBawah, batasAtas, macAddress),
                         ),
                       ],
@@ -416,15 +432,47 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 if (widget.isAdmin) ...[
                   const Divider(height: 24),
                   Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Icon(Icons.water_drop_rounded, color: Colors.blueAccent, size: 20),
-                      const SizedBox(width: 8),
-                      const Expanded(
-                        child: Text(
-                          "Siram Saat Ini (Manual Override - 1 Menit):",
-                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.black87),
-                        ),
+                      Row(
+                        children: [
+                          const Icon(Icons.water_drop_rounded, color: Colors.blueAccent, size: 20),
+                          const SizedBox(width: 8),
+                          const Text(
+                            "Siram Saat Ini:",
+                            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.black87),
+                          ),
+                        ],
                       ),
+                      if (_isSiramSaatIni && _sisaDetikSiram > 0)
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: Colors.orange.shade50,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: Colors.orange.shade300),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(Icons.timer_outlined, size: 14, color: Colors.orange),
+                              const SizedBox(width: 4),
+                              Text(
+                                "Sisa: $_sisaDetikSiram dtk",
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 12,
+                                  color: Colors.deepOrange,
+                                ),
+                              ),
+                            ],
+                          ),
+                        )
+                      else
+                        const Text(
+                          "(1 Menit Auto-OFF)",
+                          style: TextStyle(fontSize: 11, color: Colors.black54, fontStyle: FontStyle.italic),
+                        ),
                     ],
                   ),
                   const SizedBox(height: 10),
@@ -832,6 +880,22 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             },
                           ),
                         ],
+                      ),
+                    const SizedBox(height: 16),
+                    SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton.icon(
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          side: const BorderSide(color: Colors.blue),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        ),
+                        icon: const Icon(Icons.analytics_rounded, color: Colors.blue),
+                        label: const Text("📊 Buka Laporan & Ekspor Analisa Panen", style: TextStyle(color: Colors.blue, fontWeight: FontWeight.bold)),
+                        onPressed: () {
+                          Navigator.pop(ctx);
+                          _tampilkanDialogLaporan(context, zoneId, namaZona);
+                        },
                       ),
                     ),
                     const SizedBox(height: 24),
