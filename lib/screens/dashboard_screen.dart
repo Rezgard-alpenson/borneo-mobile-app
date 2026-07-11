@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../services/api_service.dart';
@@ -21,6 +22,127 @@ class _DashboardScreenState extends State<DashboardScreen> {
   final ApiService _apiService = ApiService();
   Future<SensorData>? _sensorData;
   Future<Map<String, dynamic>>? _zoneConfig;
+  bool _isAksesAirTerbuka = true; // Akses Air ke Zona (BUKA / TUTUP)
+  bool _isSiramSaatIni = false; // Status Siram Saat Ini (Aktif / Nonaktif)
+  Timer? _autoOffTimer; // Timer otomatis 1 Menit (60 Detik)
+
+  @override
+  void dispose() {
+    _autoOffTimer?.cancel();
+    super.dispose();
+  }
+
+  // Mengaktifkan siram saat ini selama 1 Menit (60 Detik)
+  void _mulaiTimerPenyiramanOtomatis() {
+    _autoOffTimer?.cancel();
+    _autoOffTimer = Timer(const Duration(seconds: 60), () async {
+      try {
+        await _apiService.controlPump(1, "OFF");
+        if (mounted) {
+          setState(() {
+            _isSiramSaatIni = false;
+          });
+          TopSnackBar.show(
+            context,
+            "⏱️ Durasi siram saat ini (1 Menit) selesai! Pompa otomatis dimatikan.",
+            isError: true,
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          setState(() {
+            _isSiramSaatIni = false;
+          });
+        }
+      }
+    });
+  }
+
+  Future<bool> _konfirmasiAksesAir(BuildContext context, bool bukaAkses) async {
+    return await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Row(
+          children: [
+            Icon(
+              bukaAkses ? Icons.lock_open_rounded : Icons.lock_rounded,
+              color: bukaAkses ? utamaHijau : Colors.red,
+            ),
+            const SizedBox(width: 8),
+            Text(
+              bukaAkses ? "Buka Akses Air Zona 1" : "Tutup Akses Air Zona 1",
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+            ),
+          ],
+        ),
+        content: Text(
+          bukaAkses
+              ? "Apakah Anda yakin ingin MEMBUKA akses air ke Zona 1? (Sistem penyiraman otomatis dan manual kembali normal)"
+              : "Apakah Anda yakin ingin MENUTUP akses air ke Zona 1?\n\n🚨 Catatan: Aliran air diputus total dan penyiraman dikunci untuk melindungi lahan dari kebanjiran akibat sensor error.",
+          style: const TextStyle(fontSize: 14),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text("Batal", style: TextStyle(color: Colors.grey)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: bukaAkses ? utamaHijau : Colors.red.shade700,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            ),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text(bukaAkses ? "Ya, Buka Akses" : "Ya, Tutup Akses"),
+          ),
+        ],
+      ),
+    ) ?? false;
+  }
+
+  Future<bool> _konfirmasiSiramSaatIni(BuildContext context, bool siram) async {
+    return await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Row(
+          children: [
+            Icon(
+              siram ? Icons.water_drop_rounded : Icons.stop_circle_rounded,
+              color: siram ? utamaHijau : Colors.red,
+            ),
+            const SizedBox(width: 8),
+            Text(
+              siram ? "Konfirmasi Siram Saat Ini" : "Berhenti Siram",
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+            ),
+          ],
+        ),
+        content: Text(
+          siram
+              ? "Apakah Anda yakin ingin menyiram Zona 1 saat ini?\n\n💡 Catatan: Pompa menyala dan akan otomatis mati setelah 1 Menit (60 detik)."
+              : "Apakah Anda yakin ingin menghentikan penyiraman saat ini?",
+          style: const TextStyle(fontSize: 14),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text("Batal", style: TextStyle(color: Colors.grey)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: siram ? utamaHijau : Colors.red.shade700,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            ),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text(siram ? "Ya, Siram (1 Menit)" : "Ya, Berhentikan"),
+          ),
+        ],
+      ),
+    ) ?? false;
+  }
 
   void _refreshData() {
     setState(() {
@@ -166,10 +288,42 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       ),
                     ),
                     const SizedBox(width: 8),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                      decoration: BoxDecoration(color: Colors.green.shade50, borderRadius: BorderRadius.circular(12)),
-                      child: const Text('Pompa OFF', style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold, fontSize: 12)),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: _isAksesAirTerbuka ? Colors.green.shade50 : Colors.red.shade50,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: _isAksesAirTerbuka ? Colors.green.shade300 : Colors.red.shade300),
+                          ),
+                          child: Text(
+                            _isAksesAirTerbuka ? 'Akses Air: BUKA' : 'Akses Air: TUTUP 🔒',
+                            style: TextStyle(
+                              color: _isAksesAirTerbuka ? utamaHijau : Colors.red.shade700,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 11,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: _isSiramSaatIni ? Colors.blue.shade50 : Colors.grey.shade100,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Text(
+                            _isSiramSaatIni ? 'Pompa ON 💧' : 'Pompa OFF',
+                            style: TextStyle(
+                              color: _isSiramSaatIni ? Colors.blue.shade800 : Colors.black54,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 11,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
@@ -260,40 +414,93 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 ),
                 // --- ATURAN RBAC BORNEO AGRICOLA: SAKELAR POMPA KHUSUS ADMIN ---
                 if (widget.isAdmin) ...[
-                  const Divider(height: 30),
+                  const Divider(height: 24),
                   Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Expanded(
-                        child: Row(
-                          children: [
-                            const Icon(Icons.power_settings_new_rounded, color: utamaHijau, size: 20),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: Text(
-                                "Kendali Pompa Manual (Eksekutor):",
-                                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.black87),
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                          ],
+                      const Icon(Icons.water_drop_rounded, color: Colors.blueAccent, size: 20),
+                      const SizedBox(width: 8),
+                      const Expanded(
+                        child: Text(
+                          "Siram Saat Ini (Manual Override - 1 Menit):",
+                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.black87),
                         ),
                       ),
-                      Switch(
-                        value: false, // Default atau status real-time
-                        activeColor: utamaHijau,
-                        onChanged: (val) async {
-                          try {
-                            await _apiService.controlPump(1, val ? "ON" : "OFF");
-                            if (context.mounted) {
-                              TopSnackBar.show(context, "Instruksi pompa ${val ? 'ON' : 'OFF'} dikirim via MQTT!");
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: ElevatedButton.icon(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.green.shade700,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 10),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                          ),
+                          icon: const Icon(Icons.play_arrow_rounded),
+                          label: const Text("SIRAM (1 MENIT)", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+                          onPressed: () async {
+                            if (!_isAksesAirTerbuka) {
+                              TopSnackBar.show(
+                                context,
+                                "🛑 Akses air ke Zona 1 sedang DITUTUP (Terkunci). Buka akses di Pengaturan Zona terlebih dahulu!",
+                                isError: true,
+                              );
+                              return;
                             }
-                          } catch (e) {
-                            if (context.mounted) {
-                              TopSnackBar.show(context, "Gagal: ${e.toString().replaceAll('Exception: ', '')}", isError: true);
+
+                            final konfirmasi = await _konfirmasiSiramSaatIni(context, true);
+                            if (!konfirmasi) return;
+
+                            try {
+                              await _apiService.controlPump(1, "ON");
+                              if (context.mounted) {
+                                setState(() {
+                                  _isSiramSaatIni = true;
+                                });
+                                _mulaiTimerPenyiramanOtomatis();
+                                TopSnackBar.show(context, "💧 Siram saat ini BERHASIL DINYALAKAN! (Otomatis mati dalam 1 Menit)");
+                              }
+                            } catch (e) {
+                              if (context.mounted) {
+                                TopSnackBar.show(context, "Gagal: ${e.toString().replaceAll('Exception: ', '')}", isError: true);
+                              }
                             }
-                          }
-                        },
+                          },
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: ElevatedButton.icon(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.red.shade700,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 10),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                          ),
+                          icon: const Icon(Icons.stop_circle_rounded),
+                          label: const Text("BERHENTI SIRAM", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+                          onPressed: () async {
+                            final konfirmasi = await _konfirmasiSiramSaatIni(context, false);
+                            if (!konfirmasi) return;
+
+                            try {
+                              await _apiService.controlPump(1, "OFF");
+                              if (context.mounted) {
+                                setState(() {
+                                  _isSiramSaatIni = false;
+                                });
+                                _autoOffTimer?.cancel();
+                                TopSnackBar.show(context, "🛑 Penyiraman dihentikan (OFF).", isError: true);
+                              }
+                            } catch (e) {
+                              if (context.mounted) {
+                                TopSnackBar.show(context, "Gagal: ${e.toString().replaceAll('Exception: ', '')}", isError: true);
+                              }
+                            }
+                          },
+                        ),
                       ),
                     ],
                   ),
@@ -395,7 +602,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       controller: macCtrl,
                       readOnly: isMacLocked,
                       decoration: InputDecoration(
-                        labelText: "MAC Address ESP32 (Perangkat Ican)",
+                        labelText: "MAC Address ESP32",
                         prefixIcon: const Icon(Icons.memory_rounded, color: utamaHijau),
                         suffixIcon: IconButton(
                           icon: Icon(
@@ -417,7 +624,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                     ],
                                   ),
                                   content: const Text(
-                                    "MAC Address adalah identitas perangkat keras ESP32 di lahan pertanian (sistem rekanan Ican).\n\n"
+                                    "MAC Address adalah identitas perangkat keras ESP32 di lahan pertanian.\n\n"
                                     "Apakah Anda yakin ingin membuka kunci dan mengubah alamat fisik ini? Jika salah ketik, sistem tidak dapat mengirim instruksi pompa air ke perangkat MQTT!",
                                     style: TextStyle(fontSize: 14, color: Colors.black87),
                                   ),
@@ -552,27 +759,70 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       ),
                     ),
                     const Divider(height: 32),
-                    const Text("🎛️ Kendali Darurat Pompa Air (Manual Override)", style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.red)),
+                    const Text("🔒 Pengaman Akses Air ke Zona 1", style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.red)),
                     const SizedBox(height: 4),
-                    const Text("Gunakan tombol ini untuk mematikan atau menyalakan pompa secara langsung saat hujan atau sensor error tanpa menunggu otomasi.", style: TextStyle(fontSize: 12, color: Colors.black54)),
+                    const Text("Tutup akses air saat terjadi kerusakan sensor agar sistem tidak menyiram terus menerus yang dapat membanjiri lahan.", style: TextStyle(fontSize: 12, color: Colors.black54)),
                     const SizedBox(height: 12),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: ElevatedButton.icon(
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.green.shade700,
-                              foregroundColor: Colors.white,
-                              padding: const EdgeInsets.symmetric(vertical: 12),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: _isAksesAirTerbuka ? Colors.green.shade50 : Colors.red.shade50,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: _isAksesAirTerbuka ? Colors.green.shade300 : Colors.red.shade300),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Expanded(
+                            child: Row(
+                              children: [
+                                Icon(
+                                  _isAksesAirTerbuka ? Icons.lock_open_rounded : Icons.lock_rounded,
+                                  color: _isAksesAirTerbuka ? utamaHijau : Colors.red,
+                                ),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    _isAksesAirTerbuka
+                                        ? "Akses Air: BUKA (Normal)"
+                                        : "Akses Air: TUTUP (Aliran Diputus)",
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 13,
+                                      color: _isAksesAirTerbuka ? Colors.black87 : Colors.red.shade700,
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ),
-                            icon: const Icon(Icons.power_settings_new_rounded),
-                            label: const Text("NYALAKAN (ON)", style: TextStyle(fontWeight: FontWeight.bold)),
-                            onPressed: () async {
+                          ),
+                          Switch(
+                            value: _isAksesAirTerbuka,
+                            activeColor: utamaHijau,
+                            inactiveThumbColor: Colors.red,
+                            inactiveTrackColor: Colors.red.shade100,
+                            onChanged: (val) async {
+                              final konfirmasi = await _konfirmasiAksesAir(context, val);
+                              if (!konfirmasi) return;
+
                               try {
-                                await _apiService.controlPump(zoneId, "ON");
+                                await _apiService.controlPump(1, "OFF");
                                 if (context.mounted) {
-                                  TopSnackBar.show(context, "Instruksi NYALAKAN pompa berhasil dikirim ke ESP32!");
+                                  setState(() {
+                                    _isAksesAirTerbuka = val;
+                                    if (!val) {
+                                      _isSiramSaatIni = false;
+                                      _autoOffTimer?.cancel();
+                                    }
+                                  });
+                                  setModalState(() {});
+                                  TopSnackBar.show(
+                                    context,
+                                    val
+                                        ? "✅ Akses air ke Zona 1 DIBUKA (Sistem kembali normal)"
+                                        : "🛑 Akses air ke Zona 1 DITUTUP (Aliran air diputus total)",
+                                    isError: !val,
+                                  );
                                 }
                               } catch (e) {
                                 if (context.mounted) {
@@ -581,33 +831,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                               }
                             },
                           ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: ElevatedButton.icon(
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.red.shade700,
-                              foregroundColor: Colors.white,
-                              padding: const EdgeInsets.symmetric(vertical: 12),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                            ),
-                            icon: const Icon(Icons.stop_circle_rounded),
-                            label: const Text("MATIKAN (OFF)", style: TextStyle(fontWeight: FontWeight.bold)),
-                            onPressed: () async {
-                              try {
-                                await _apiService.controlPump(zoneId, "OFF");
-                                if (context.mounted) {
-                                  TopSnackBar.show(context, "Instruksi MATIKAN pompa berhasil dikirim ke ESP32!", isError: true);
-                                }
-                              } catch (e) {
-                                if (context.mounted) {
-                                  TopSnackBar.show(context, "Gagal: ${e.toString().replaceAll('Exception: ', '')}", isError: true);
-                                }
-                              }
-                            },
-                          ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                     const SizedBox(height: 24),
                   ],
@@ -662,7 +887,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text("Tambah Zona & Alat IoT", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                              Text("Hubungkan MAC Address ESP32 Ican", style: TextStyle(fontSize: 12, color: Colors.black54)),
+                              Text("Hubungkan MAC Address ESP32", style: TextStyle(fontSize: 12, color: Colors.black54)),
                             ],
                           ),
                         ),
