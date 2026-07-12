@@ -256,7 +256,60 @@ class _DashboardScreenState extends State<DashboardScreen> {
               if (snapshot.connectionState == ConnectionState.waiting) {
                 return const Center(child: CircularProgressIndicator(color: utamaHijau));
               } else if (snapshot.hasError) {
-                return Center(child: Text("Gagal memuat data: ${snapshot.error}"));
+                final errStr = snapshot.error.toString().replaceAll('Exception: ', '');
+                final isBelumAdaData = errStr.contains("Belum ada data sensor");
+
+                return Container(
+                  padding: const EdgeInsets.all(24),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: isBelumAdaData ? Colors.orange.shade300 : Colors.red.shade300),
+                    boxShadow: [
+                      BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 4)),
+                    ],
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        isBelumAdaData ? Icons.sensors_off_rounded : Icons.cloud_off_rounded,
+                        size: 56,
+                        color: isBelumAdaData ? Colors.orange : Colors.red,
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        isBelumAdaData ? "Belum Ada Data Sensor Masuk" : "Koneksi Bermasalah",
+                        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        isBelumAdaData
+                            ? "Zona ini sudah terdaftar di server, namun perangkat keras ESP32 belum mengirimkan data sensor pertama."
+                            : errStr,
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(fontSize: 13, color: Colors.black54),
+                      ),
+                      const SizedBox(height: 20),
+                      ElevatedButton.icon(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: utamaHijau,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        ),
+                        icon: const Icon(Icons.refresh_rounded),
+                        label: const Text("Segarkan Data", style: TextStyle(fontWeight: FontWeight.bold)),
+                        onPressed: () {
+                          setState(() {
+                            _sensorData = _apiService.fetchLatestSensor(1);
+                            _zoneConfig = _apiService.fetchZoneConfig(1);
+                          });
+                        },
+                      ),
+                    ],
+                  ),
+                );
               } else if (!snapshot.hasData) {
                 return const Center(child: Text("Belum ada data sensor."));
               }
