@@ -2,7 +2,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 class ApiConfig {
   // Alamat IP Default (akan ditimpa otomatis jika ada IP yang disimpan pengguna di HP)
-  static String _baseUrl = "http://192.168.1.12:8000"; 
+  static String _baseUrl = "https://eis.wicida.ac.id"; 
   static String get baseUrl => _baseUrl;
 
   // Mengambil angka IP murni (misal: 192.168.1.12) untuk ditampilkan pada input form
