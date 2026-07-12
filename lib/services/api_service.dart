@@ -103,9 +103,32 @@ class ApiService {
         final payload = _extractPayload(response);
         return SensorData.fromJson(payload);
       } else {
-        throw Exception(_extractError(response, 'Gagal mengambil data sensor dari server (${response.statusCode})'));
+        final err = _extractError(response, '');
+        if (err.contains("Belum ada data") || response.statusCode == 404) {
+          return SensorData(
+            kelembapanTanah: 0.0,
+            suhuUdara: 0.0,
+            kelembapanUdara: 0.0,
+            phTanah: 0.0,
+            debitAir: 0.0,
+            statusHujan: false,
+            waktuRekam: "Belum Ada Data Sensor (Menunggu ESP32)",
+          );
+        }
+        throw Exception(err.isNotEmpty ? err : 'Gagal mengambil data sensor dari server (${response.statusCode})');
       }
     } catch (e) {
+      if (e.toString().contains("Belum ada data")) {
+        return SensorData(
+          kelembapanTanah: 0.0,
+          suhuUdara: 0.0,
+          kelembapanUdara: 0.0,
+          phTanah: 0.0,
+          debitAir: 0.0,
+          statusHujan: false,
+          waktuRekam: "Belum Ada Data Sensor (Menunggu ESP32)",
+        );
+      }
       throw _handleNetworkError(e);
     }
   }
