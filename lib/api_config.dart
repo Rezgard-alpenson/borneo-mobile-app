@@ -36,7 +36,9 @@ class ApiConfig {
   static Future<void> setServerIp(String newIp) async {
     String formattedIp = newIp.trim();
     if (!formattedIp.startsWith("http")) {
-      if (!formattedIp.contains(":")) {
+      if (formattedIp.contains(".ac.id") || formattedIp.contains(".com") || formattedIp.contains(".io") || formattedIp.contains(".net") || formattedIp.contains(".org")) {
+        formattedIp = "https://$formattedIp";
+      } else if (!formattedIp.contains(":")) {
         formattedIp = "http://$formattedIp:8000";
       } else {
         formattedIp = "http://$formattedIp";

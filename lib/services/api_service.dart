@@ -37,6 +37,27 @@ class ApiService {
     }
     return Exception(errStr.replaceAll("Exception: ", ""));
   }
+
+  // Helper universal untuk mengambil data dari response (baik format langsung maupun wrapper Faidil {success, message, data})
+  dynamic _extractPayload(http.Response response) {
+    final decoded = jsonDecode(response.body);
+    if (decoded is Map<String, dynamic> && decoded.containsKey('data') && decoded['data'] != null) {
+      return decoded['data'];
+    }
+    return decoded;
+  }
+
+  // Helper universal untuk membaca pesan error dari response backend
+  String _extractError(http.Response response, String defaultMsg) {
+    try {
+      final decoded = jsonDecode(response.body);
+      if (decoded is Map<String, dynamic>) {
+        return decoded['message'] ?? decoded['detail'] ?? defaultMsg;
+      }
+    } catch (_) {}
+    return defaultMsg;
+  }
+
   // Fungsi untuk Login dengan Penyimpanan Token JWT & Role RBAC
   Future<bool> loginUser(String username, String password) async {
     try {
@@ -50,11 +71,14 @@ class ApiService {
       ).timeout(const Duration(seconds: 6));
 
       if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        SessionManager.token = data['access_token'];
-        SessionManager.role = data['role'];
-        SessionManager.userId = data['user_id'];
-        SessionManager.username = data['username'];
+        final decoded = jsonDecode(response.body);
+        final payload = _extractPayload(response);
+        final payloadMap = (payload is Map<String, dynamic>) ? payload : (decoded is Map<String, dynamic> ? decoded : {});
+
+        SessionManager.token = payloadMap['access_token'] ?? decoded['access_token'];
+        SessionManager.role = payloadMap['role'] ?? decoded['role'];
+        SessionManager.userId = payloadMap['user_id'] ?? decoded['user_id'];
+        SessionManager.username = payloadMap['username'] ?? decoded['username'];
         print(">>> [JWT ACTIVE] Sesi tersimpan untuk '${SessionManager.username}' (Role: ${SessionManager.role}) <<<");
         return true; 
       } else {
@@ -76,16 +100,17 @@ class ApiService {
       ).timeout(const Duration(seconds: 6));
 
       if (response.statusCode == 200) {
-        return SensorData.fromJson(jsonDecode(response.body));
+        final payload = _extractPayload(response);
+        return SensorData.fromJson(payload);
       } else {
-        throw Exception('Gagal mengambil data dari server, kode: ${response.statusCode}');
+        throw Exception(_extractError(response, 'Gagal mengambil data sensor dari server (${response.statusCode})'));
       }
     } catch (e) {
       throw _handleNetworkError(e);
     }
   }
 
-  // Fungsi baru untuk mendaftarkan Zona & MAC Address ESP32 (Revisi Sempro)
+  // Fungsi untuk mendaftarkan Zona & MAC Address ESP32
   Future<bool> createNewZone({
     required String namaZona,
     required String deskripsi,
@@ -109,8 +134,7 @@ class ApiService {
       if (response.statusCode == 200) {
         return true;
       } else {
-        final body = jsonDecode(response.body);
-        throw Exception(body['detail'] ?? 'Gagal menambahkan zona');
+        throw Exception(_extractError(response, 'Gagal menambahkan zona'));
       }
     } catch (e) {
       print(">>> ERROR CREATE ZONE: $e <<<");
@@ -136,8 +160,7 @@ class ApiService {
       } else if (response.statusCode == 403) {
         throw Exception('Akses Ditolak! Anda masuk sebagai Viewer.');
       } else {
-        final body = jsonDecode(response.body);
-        throw Exception(body['detail'] ?? 'Gagal mengontrol pompa');
+        throw Exception(_extractError(response, 'Gagal mengontrol pompa'));
       }
     } catch (e) {
       print(">>> ERROR CONTROL PUMP: $e <<<");
@@ -145,7 +168,7 @@ class ApiService {
     }
   }
 
-  // --- FITUR REVISI SEMPRO: BACA & UBAH THRESHOLD ZONA ---
+  // --- BACA & UBAH THRESHOLD ZONA ---
   Future<Map<String, dynamic>> fetchZoneConfig(int zoneId) async {
     try {
       final response = await http.get(
@@ -153,9 +176,10 @@ class ApiService {
         headers: SessionManager.headers,
       ).timeout(const Duration(seconds: 6));
       if (response.statusCode == 200) {
-        return jsonDecode(response.body);
+        final payload = _extractPayload(response);
+        return (payload is Map<String, dynamic>) ? payload : {};
       } else {
-        throw Exception('Gagal membaca konfigurasi zona $zoneId');
+        throw Exception(_extractError(response, 'Gagal membaca konfigurasi zona $zoneId'));
       }
     } catch (e) {
       throw _handleNetworkError(e);
@@ -181,8 +205,7 @@ class ApiService {
       } else if (response.statusCode == 403) {
         throw Exception('Akses Ditolak! Khusus Eksekutor (Admin).');
       } else {
-        final body = jsonDecode(response.body);
-        throw Exception(body['detail'] ?? 'Gagal memperbarui threshold');
+        throw Exception(_extractError(response, 'Gagal memperbarui threshold'));
       }
     } catch (e) {
       print(">>> ERROR UPDATE ZONE: $e <<<");
@@ -207,8 +230,7 @@ class ApiService {
       if (response.statusCode == 200) {
         return true;
       } else {
-        final body = jsonDecode(response.body);
-        throw Exception(body['detail'] ?? 'Gagal membuat user baru');
+        throw Exception(_extractError(response, 'Gagal membuat user baru'));
       }
     } catch (e) {
       throw _handleNetworkError(e);
@@ -228,15 +250,14 @@ class ApiService {
       if (response.statusCode == 200) {
         return true;
       } else {
-        final body = jsonDecode(response.body);
-        throw Exception(body['detail'] ?? 'Gagal mengganti password');
+        throw Exception(_extractError(response, 'Gagal mengganti password'));
       }
     } catch (e) {
       throw _handleNetworkError(e);
     }
   }
 
-  // --- FITUR SARAN 2: SMART ALERTING SYSTEM ---
+  // --- SMART ALERTING SYSTEM ---
   Future<Map<String, dynamic>> fetchZoneAlerts(int zoneId) async {
     try {
       final response = await http.get(
@@ -244,7 +265,8 @@ class ApiService {
         headers: SessionManager.headers,
       ).timeout(const Duration(seconds: 6));
       if (response.statusCode == 200) {
-        return jsonDecode(response.body);
+        final payload = _extractPayload(response);
+        return (payload is Map<String, dynamic>) ? payload : {"zone_id": zoneId, "nama_zona": "Zona $zoneId", "alerts": []};
       } else {
         throw Exception("Gagal memuat notifikasi zona");
       }
@@ -253,7 +275,7 @@ class ApiService {
     }
   }
 
-  // --- FITUR SARAN 3: CSV EXPORT REPORT ---
+  // --- CSV EXPORT REPORT ---
   Future<String> fetchExportCsv(int zoneId) async {
     try {
       final response = await http.get(
@@ -261,7 +283,8 @@ class ApiService {
         headers: SessionManager.headers,
       ).timeout(const Duration(seconds: 6));
       if (response.statusCode == 200) {
-        return response.body;
+        final payload = _extractPayload(response);
+        return (payload is String) ? payload : response.body;
       } else {
         throw Exception("Gagal memuat laporan CSV");
       }
@@ -270,7 +293,7 @@ class ApiService {
     }
   }
 
-  // --- FITUR BARU: GRAFIK RIWAYAT SENSOR TIME-SERIES ---
+  // --- GRAFIK RIWAYAT SENSOR TIME-SERIES ---
   Future<List<SensorData>> fetchSensorHistory(int zoneId) async {
     try {
       final response = await http.get(
@@ -278,7 +301,8 @@ class ApiService {
         headers: SessionManager.headers,
       ).timeout(const Duration(seconds: 6));
       if (response.statusCode == 200) {
-        final List<dynamic> dataList = jsonDecode(response.body);
+        final payload = _extractPayload(response);
+        final List<dynamic> dataList = (payload is List) ? payload : [];
         return dataList.map((json) => SensorData.fromJson(json)).toList();
       } else {
         throw Exception("Gagal memuat riwayat sensor");
