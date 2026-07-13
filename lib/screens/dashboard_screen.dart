@@ -180,10 +180,18 @@ class _DashboardScreenState extends State<DashboardScreen> {
   void initState() {
     super.initState();
     _refreshData();
-    _autoRefreshTimer = Timer.periodic(const Duration(seconds: 3), (timer) {
-      if (mounted) {
-        _refreshData();
-      }
+    _autoRefreshTimer = Timer.periodic(const Duration(seconds: 3), (timer) async {
+      if (!mounted) return;
+      try {
+        final newSensor = await _apiService.fetchLatestSensor(1);
+        final newConfig = await _apiService.fetchZoneConfig(1);
+        if (mounted) {
+          setState(() {
+            _sensorData = Future.value(newSensor);
+            _zoneConfig = Future.value(newConfig);
+          });
+        }
+      } catch (_) {}
     });
   }
 
