@@ -27,11 +27,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
   int _sisaDetikSiram = 0; // Hitung mundur penyiraman manual (Detik)
   Timer? _autoOffTimer; // Timer otomatis 1 Menit (60 Detik)
   Timer? _countdownTimer; // Timer per detik untuk update UI
+  Timer? _autoRefreshTimer; // Timer pembaruan otomatis tiap 3 detik
 
   @override
   void dispose() {
     _autoOffTimer?.cancel();
     _countdownTimer?.cancel();
+    _autoRefreshTimer?.cancel();
     super.dispose();
   }
 
@@ -178,6 +180,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
   void initState() {
     super.initState();
     _refreshData();
+    _autoRefreshTimer = Timer.periodic(const Duration(seconds: 3), (timer) {
+      if (mounted) {
+        _refreshData();
+      }
+    });
   }
 
   @override
