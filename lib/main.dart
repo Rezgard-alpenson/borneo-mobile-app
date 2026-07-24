@@ -5,12 +5,18 @@ import 'api_config.dart';
 const Color utamaHijau = Color(0xFF1B5E20);
 const Color latarAbu = Color(0xFFF4F7F4);
 
+// ===============================================================
+// --- BAGIAN: INISIALISASI DAN TITIK AWAL JALANNYA APLIKASI ---
+// ===============================================================
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await ApiConfig.loadSavedIp();
+  // await ApiConfig.loadSavedIp();
   runApp(const BorneoApp());
 }
 
+// ===============================================================
+// --- BAGIAN: KONFIGURASI TEMA DAN HALAMAN UTAMA (ROOT WIDGET) ---
+// ===============================================================
 class BorneoApp extends StatelessWidget {
   const BorneoApp({super.key});
 

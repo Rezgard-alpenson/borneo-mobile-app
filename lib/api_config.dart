@@ -1,11 +1,17 @@
-import 'package:shared_preferences/shared_preferences.dart';
+// [NONAKTIF]: import 'package:shared_preferences/shared_preferences.dart'; // Tidak lagi menggunakan penyimpanan IP manual di SharedPreferences
 
+// ===============================================================
+// --- BAGIAN: PENGATURAN DAN PENYIMPANAN ALAMAT IP SERVER ---
+// ===============================================================
 class ApiConfig {
-  // Alamat IP Default (akan ditimpa otomatis jika ada IP yang disimpan pengguna di HP)
-  static String _baseUrl = "https://eis.wicida.ac.id"; 
+  // Alamat IP Utama yang berjalan tetap di server kampus
+  static const String _baseUrl = "https://eis.wicida.ac.id"; 
   static String get baseUrl => _baseUrl;
 
-  // Mengambil angka IP murni (misal: 192.168.1.12) untuk ditampilkan pada input form
+  /* ===============================================================
+  // --- [NONAKTIF]: FITUR GANTI IP MANUAL (DARI SHAREDPREFERENCES) ---
+  // Ditutup karena backend sudah berjalan tetap di server kampus (eis.wicida.ac.id)
+  // ===============================================================
   static String get currentIpOnly {
     return _baseUrl
         .replaceAll("http://", "")
@@ -14,7 +20,6 @@ class ApiConfig {
         .trim();
   }
 
-  // Memuat IP yang tersimpan di memori HP saat aplikasi dijalankan
   static Future<void> loadSavedIp() async {
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -32,7 +37,6 @@ class ApiConfig {
     }
   }
 
-  // Menyimpan dan mengubah alamat IP server baru ke SharedPreferences
   static Future<void> setServerIp(String newIp) async {
     String formattedIp = newIp.trim();
     if (!formattedIp.startsWith("http")) {
@@ -53,8 +57,11 @@ class ApiConfig {
       print(">>> [API CONFIG] Gagal menyimpan IP: $e <<<");
     }
   }
+  =============================================================== */
 
-  // Endpoint API
+  // ===============================================================
+  // --- BAGIAN: DAFTAR ENDPOINT API (URL TUJUAN BACKEND) ---
+  // ===============================================================
   static String get login => "$baseUrl/api/login"; 
   static String getLatestSensor(int zoneId) => "$baseUrl/api/zones/$zoneId/sensor/latest";
   static String get getAllZones => "$baseUrl/api/zones";

@@ -1,3 +1,6 @@
+// ===============================================================
+// --- BAGIAN: STRUKTUR MODEL DATA SENSOR & KONVERSI DARI JSON ---
+// ===============================================================
 class SensorData {
   final double kelembapanTanah;
   final double suhuUdara;

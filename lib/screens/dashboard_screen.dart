@@ -6,9 +6,11 @@ import '../models/sensor_model.dart';
 import 'login_screen.dart';
 import '../widgets/top_snackbar.dart';
 
-// Konstanta warna dari desain Sempro Anda
 const Color utamaHijau = Color(0xFF1B5E20);
 
+// ===============================================================
+// --- BAGIAN: HALAMAN DASBOR UTAMA (MONITORING & CONTROLLING) ---
+// ===============================================================
 class DashboardScreen extends StatefulWidget {
   final bool isAdmin;
   
@@ -18,6 +20,9 @@ class DashboardScreen extends StatefulWidget {
   State<DashboardScreen> createState() => _DashboardScreenState();
 }
 
+// ===============================================================
+// --- BAGIAN: STATE UTAMA DAN VARIABEL PENAMPUNG DATA ---
+// ===============================================================
 class _DashboardScreenState extends State<DashboardScreen> {
   final ApiService _apiService = ApiService();
   Future<SensorData>? _sensorData;
@@ -25,6 +30,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   bool _isAksesAirTerbuka = true; // Akses Air ke Zona (BUKA / TUTUP)
   bool _isSiramSaatIni = false; // Status Siram Saat Ini (Aktif / Nonaktif)
   int _sisaDetikSiram = 0; // Hitung mundur penyiraman manual (Detik)
+  bool _isMesinOtomatisAktif = false; // Status hysteresis mesin IoT
   Timer? _autoOffTimer; // Timer otomatis 1 Menit (60 Detik)
   Timer? _countdownTimer; // Timer per detik untuk update UI
   Timer? _autoRefreshTimer; // Timer pembaruan otomatis tiap 3 detik
@@ -38,6 +44,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   // Mengaktifkan siram saat ini selama 1 Menit (60 Detik) beserta hitung mundur
+  // ===============================================================
+  // --- BAGIAN: FUNGSI TIMER & LOGIKA OTOMATISASI PENYIRAMAN ---
+  // ===============================================================
   void _mulaiTimerPenyiramanOtomatis() {
     _autoOffTimer?.cancel();
     _countdownTimer?.cancel();
@@ -195,6 +204,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
     });
   }
 
+  // ===============================================================
+  // --- BAGIAN: STRUKTUR TAMPILAN UTAMA ANTARMUKA (UI) DASBOR ---
+  // ===============================================================
   @override
   Widget build(BuildContext context) {
     _sensorData ??= _apiService.fetchLatestSensor(1);
@@ -268,7 +280,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           FutureBuilder<SensorData>(
             future: _sensorData,
             builder: (context, snapshot) {
-              if (snapshot.connectionState == ConnectionState.waiting) {
+              if (snapshot.connectionState == ConnectionState.waiting && !snapshot.hasData) {
                 return const Center(child: CircularProgressIndicator(color: utamaHijau));
               } else if (snapshot.hasError) {
                 final errStr = snapshot.error.toString().replaceAll('Exception: ', '');
@@ -338,7 +350,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  // Fungsi pembuat UI kartu yang diadaptasi dari kode Sempro Anda
+  // ===============================================================
+  // --- BAGIAN: TAMPILAN KARTU ZONA & TOMBOL KENDALI (SWITCH/THRESHOLD) ---
+  // ===============================================================
   Widget _buatKartuZona(SensorData data) {
     return FutureBuilder<Map<String, dynamic>>(
       future: _zoneConfig,
@@ -346,13 +360,23 @@ class _DashboardScreenState extends State<DashboardScreen> {
         final config = snapshot.data ?? {
           "nama_zona": "Zona 1 (Kebun A)",
           "mac_address": "ESP32-ZONA-01",
-          "batas_bawah": 40.0,
-          "batas_atas": 80.0
+          "batas_bawah": 50.0,
+          "batas_atas": 75.0
         };
         final namaZona = config['nama_zona'] ?? "Zona 1 (Kebun A)";
         final macAddress = config['mac_address'] ?? "ESP32-ZONA-01";
-        final batasBawah = (config['batas_bawah'] as num?)?.toDouble() ?? 40.0;
-        final batasAtas = (config['batas_atas'] as num?)?.toDouble() ?? 80.0;
+        final batasBawah = (config['batas_bawah'] as num?)?.toDouble() ?? 50.0;
+        final batasAtas = (config['batas_atas'] as num?)?.toDouble() ?? 75.0;
+        
+        // --- LOGIKA HYSTERESIS BARU ---
+        if (data.kelembapanTanah < batasBawah) {
+          _isMesinOtomatisAktif = true;
+        } else if (data.kelembapanTanah >= batasAtas) {
+          _isMesinOtomatisAktif = false;
+        }
+        
+        final isOtomatisMenyiram = _isMesinOtomatisAktif && _isAksesAirTerbuka;
+        final isPompaAktif = _isSiramSaatIni || isOtomatisMenyiram;
 
         return Container(
           margin: const EdgeInsets.only(bottom: 16),
@@ -402,13 +426,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                           decoration: BoxDecoration(
-                            color: _isSiramSaatIni ? Colors.blue.shade50 : Colors.grey.shade100,
+                            color: isPompaAktif ? Colors.blue.shade50 : Colors.grey.shade100,
                             borderRadius: BorderRadius.circular(12),
+                            border: isOtomatisMenyiram ? Border.all(color: Colors.blue.shade300) : null,
                           ),
                           child: Text(
-                            _isSiramSaatIni ? 'Pompa ON 💧' : 'Pompa OFF',
+                            isOtomatisMenyiram
+                                ? 'Pompa ON (Otomatis) ⚡💧'
+                                : (_isSiramSaatIni ? 'Pompa ON (Manual) 💧' : 'Pompa OFF'),
                             style: TextStyle(
-                              color: _isSiramSaatIni ? Colors.blue.shade800 : Colors.black54,
+                              color: isPompaAktif ? Colors.blue.shade800 : Colors.black54,
                               fontWeight: FontWeight.bold,
                               fontSize: 11,
                             ),
@@ -443,14 +470,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           icon: Icons.settings_rounded,
                           color: utamaHijau,
                           label: "Pengaturan",
-                          onTap: () => _tampilkanDialogAturThreshold(context, 1, namaZona, batasBawah, batasAtas, macAddress),
+                          onTap: () => _tampilkanDialogAturThreshold(context, 1, namaZona, batasBawah, batasAtas, macAddress, data.kelembapanTanah),
                         ),
                       ],
                     ],
                   ),
                 ),
                 const SizedBox(height: 12),
-                // --- INFORMASI THRESHOLD ZONA (HASIL REVISI SEMPRO) ---
+                // --- INFORMASI THRESHOLD ZONA  ---
                 Container(
                   width: double.infinity,
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -496,8 +523,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     _infoSensor(Icons.science_outlined, 'pH', '${data.phTanah}', Colors.purple),
                   ],
                 ),
-                // --- ATURAN RBAC BORNEO AGRICOLA: SAKELAR POMPA KHUSUS ADMIN ---
-                if (widget.isAdmin) ...[
+                // --- ATURAN RBAC BORNEO AGRICOLA: SAKELAR POMPA KINI DIBUKA UNTUK VIEWER ---
+                if (true) ...[
                   const Divider(height: 24),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -662,8 +689,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  // --- FITUR REVISI SEMPRO: DIALOG ATUR THRESHOLD OTOMASI PER ZONA ---
-  void _tampilkanDialogAturThreshold(BuildContext context, int zoneId, String namaZona, double batasBawah, double batasAtas, String macAddress) {
+  // ===============================================================
+  // --- BAGIAN: DIALOG PENGATURAN AMBANG BATAS (THRESHOLD) ZONA ---
+  // ===============================================================
+  void _tampilkanDialogAturThreshold(BuildContext context, int zoneId, String namaZona, double batasBawah, double batasAtas, String macAddress, [double kelembapanSaatIni = 0.0]) {
     final namaCtrl = TextEditingController(text: namaZona);
     final bawahCtrl = TextEditingController(text: batasBawah.toString());
     final atasCtrl = TextEditingController(text: batasAtas.toString());
@@ -808,8 +837,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                         ),
                         onPressed: isSubmitting ? null : () async {
-                          final b = double.tryParse(bawahCtrl.text.trim()) ?? 40.0;
-                          final a = double.tryParse(atasCtrl.text.trim()) ?? 80.0;
+                          final b = double.tryParse(bawahCtrl.text.trim()) ?? 50.0;
+                          final a = double.tryParse(atasCtrl.text.trim()) ?? 75.0;
                           if (b >= a) {
                             TopSnackBar.show(context, "Batas bawah harus lebih kecil dari batas atas!", isError: true);
                             return;
@@ -918,7 +947,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                               if (!konfirmasi) return;
 
                               try {
-                                await _apiService.controlPump(1, "OFF");
+                                final harusOtomatisNyala = val && (kelembapanSaatIni < batasBawah);
+
+                                await _apiService.controlPump(1, harusOtomatisNyala ? "ON" : "OFF");
                                 if (context.mounted) {
                                   setState(() {
                                     _isAksesAirTerbuka = val;
@@ -931,7 +962,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                   TopSnackBar.show(
                                     context,
                                     val
-                                        ? "✅ Akses air ke $namaZona DIBUKA (Sistem kembali normal)"
+                                        ? (harusOtomatisNyala
+                                            ? "⚡ Akses Air DIBUKA & Tanah Kering ($kelembapanSaatIni% < $batasBawah%). Pompa OTOMATIS ON!"
+                                            : "✅ Akses air ke $namaZona DIBUKA (Sistem kembali normal)")
                                         : "🛑 Akses air ke $namaZona DITUTUP (Aliran air diputus total)",
                                     isError: !val,
                                   );
@@ -974,7 +1007,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  // --- FITUR REVISI SEMPRO: DIALOG PENAMBAHAN ZONA & MAC ADDRESS ESP32 ---
+  // --- DIALOG PENAMBAHAN ZONA & MAC ADDRESS ESP32 ---
   void _tampilkanDialogTambahZona(BuildContext context) {
     final namaCtrl = TextEditingController();
     final macCtrl = TextEditingController();
@@ -1711,6 +1744,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
 }
 
 // KELAS PELUKIS GRAFIK (NATIVE FLUTTER CUSTOM PAINTER)
+// ===============================================================
+// --- BAGIAN: KOMPONEN PENGGAMBAR GRAFIK RIWAYAT (CHART PAINTER) ---
+// ===============================================================
 class SensorChartPainter extends CustomPainter {
   final List<SensorData> data;
   SensorChartPainter(this.data);
@@ -1719,11 +1755,19 @@ class SensorChartPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     if (data.isEmpty) return;
 
-    final gridPaint = Paint()..color = Colors.grey.shade200..strokeWidth = 1;
-    // Gambar garis grid horisontal
+    final gridPaint = Paint()..color = Colors.grey.shade300..strokeWidth = 2.0;
+    // Gambar garis grid horisontal dan angka skala
     for (int i = 0; i <= 4; i++) {
       final y = size.height * (i / 4);
       canvas.drawLine(Offset(0, y), Offset(size.width, y), gridPaint);
+      
+      final label = (100 - (i * 25)).toString();
+      final textPainter = TextPainter(
+        text: TextSpan(text: label, style: const TextStyle(color: Colors.grey, fontSize: 10, fontWeight: FontWeight.bold)),
+        textDirection: TextDirection.ltr,
+      );
+      textPainter.layout();
+      textPainter.paint(canvas, Offset(2, y - 14));
     }
 
     final soilPaint = Paint()..color = Colors.green..strokeWidth = 3..style = PaintingStyle.stroke..strokeCap = StrokeCap.round;

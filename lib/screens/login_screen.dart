@@ -7,6 +7,9 @@ import '../widgets/top_snackbar.dart';
 const Color utamaHijau = Color(0xFF1B5E20);
 const Color latarAbu = Color(0xFFF4F7F4);
 
+// ===============================================================
+// --- BAGIAN: STRUKTUR DAN HALAMAN OTENTIKASI (MASUK / LOGIN) ---
+// ===============================================================
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
 
@@ -19,7 +22,7 @@ class _LoginScreenState extends State<LoginScreen> {
   final TextEditingController _passwordCtrl = TextEditingController();
   
   bool _isLoading = false;
-  // Fitur baru: State untuk kontrol visibility password
+  // State untuk kontrol visibility password
   bool _isPasswordVisible = false;
   
   final ApiService _apiService = ApiService();
@@ -31,10 +34,13 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
+  // ===============================================================
+  // --- BAGIAN: LOGIKA EKSEKUTIF PROSES LOGIN (MEMANGGIL BACKEND) ---
+  // ===============================================================
   void _prosesLogin() async {
     if (_isLoading) return; 
 
-    setState(() { _isLoading = true; }); 
+    setState(() { _isLoading = true; });
 
     try {
       bool isSuccess = await _apiService.loginUser(
@@ -63,6 +69,7 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
+  /* ===============================================================
   void _showIpSettingsDialog() {
     final TextEditingController ipCtrl = TextEditingController(text: ApiConfig.currentIpOnly);
     showDialog(
@@ -125,7 +132,11 @@ class _LoginScreenState extends State<LoginScreen> {
       ),
     );
   }
+  =============================================================== */
 
+  // ===============================================================
+  // --- BAGIAN: TAMPILAN VISUAL / ANTARMUKA (UI) HALAMAN LOGIN ---
+  // ===============================================================
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -206,6 +217,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         )
                       : const Text('MASUK', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, letterSpacing: 1)),
                   ),
+                  /*
                   const SizedBox(height: 20),
                   TextButton.icon(
                     onPressed: _showIpSettingsDialog,
@@ -215,6 +227,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       style: const TextStyle(color: utamaHijau, fontSize: 13, fontWeight: FontWeight.bold),
                     ),
                   ),
+                  */
                 ],
               ),
             ),

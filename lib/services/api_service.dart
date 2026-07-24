@@ -4,7 +4,9 @@ import 'package:http/http.dart' as http;
 import '../api_config.dart';
 import '../models/sensor_model.dart';
 
-// --- FASE 1: MANAJEMEN SESI & RBAC (ANGRAF) ---
+// ===============================================================
+// --- BAGIAN: MANAJEMEN SESI PENGGUNA & AKSES ROLE (RBAC) ---
+// ===============================================================
 class SessionManager {
   static String? token;
   static String? role;
@@ -26,19 +28,22 @@ class SessionManager {
   }
 }
 
+// ===============================================================
+// --- BAGIAN: KELAS UTAMA PENGHUBUNG KONEKSI DAN REQUEST KE BACKEND ---
+// ===============================================================
 class ApiService {
   Exception _handleNetworkError(Object e) {
     final errStr = e.toString();
     if (errStr.contains("TimeoutException") || errStr.contains("timed out") || errStr.contains("Timeout")) {
-      return Exception('Waktu koneksi habis (Timeout 6 detik)! Server (${ApiConfig.currentIpOnly}) tidak merespons. Pastikan server Docker/Backend sudah dinyalakan dan HP di jaringan Wi-Fi yang sama.');
+      return Exception('Waktu koneksi habis (Timeout 6 detik)! Server (${ApiConfig.baseUrl}) tidak merespons. Pastikan koneksi internet aktif.');
     }
     if (errStr.contains("SocketException") || errStr.contains("Connection refused") || errStr.contains("Failed host lookup") || errStr.contains("Network is unreachable") || errStr.contains("No route to host") || errStr.contains("ClientException")) {
-      return Exception('Gagal terhubung ke server (${ApiConfig.currentIpOnly}). Pastikan server Docker/Backend sudah dinyalakan.');
+      return Exception('Gagal terhubung ke server (${ApiConfig.baseUrl}). Pastikan koneksi internet aktif.');
     }
     return Exception(errStr.replaceAll("Exception: ", ""));
   }
 
-  // Helper universal untuk mengambil data dari response (baik format langsung maupun wrapper Faidil {success, message, data})
+  // Helper universal untuk mengambil data dari response (baik format langsung maupun wrapper {success, message, data})
   dynamic _extractPayload(http.Response response) {
     final decoded = jsonDecode(response.body);
     if (decoded is Map<String, dynamic> && decoded.containsKey('data') && decoded['data'] != null) {
@@ -58,7 +63,9 @@ class ApiService {
     return defaultMsg;
   }
 
-  // Fungsi untuk Login dengan Penyimpanan Token JWT & Role RBAC
+  // ===============================================================
+  // --- BAGIAN: FUNGSI LOGIN & PEMBUATAN TOKEN SESI ---
+  // ===============================================================
   Future<bool> loginUser(String username, String password) async {
     try {
       final response = await http.post(
@@ -91,7 +98,9 @@ class ApiService {
     }
   }
 
-  // Fungsi untuk mengambil data sensor dengan proteksi token JWT
+  // ===============================================================
+  // --- BAGIAN: PENGAMBILAN DATA SENSOR TERKINI (TELEMETRI) ---
+  // ===============================================================
   Future<SensorData> fetchLatestSensor(int zoneId) async {
     try {
       final response = await http.get(
@@ -133,7 +142,9 @@ class ApiService {
     }
   }
 
-  // Fungsi untuk mendaftarkan Zona & MAC Address ESP32
+  // ===============================================================
+  // --- BAGIAN: PENAMBAHAN ZONA BARU & REGISTRASI MAC ADDRESS ESP32 ---
+  // ===============================================================
   Future<bool> createNewZone({
     required String namaZona,
     required String deskripsi,
@@ -165,7 +176,9 @@ class ApiService {
     }
   }
 
-  // --- FITUR RBAC EKSEKUTOR: KENDALI POMPA MANUAL ---
+  // ===============================================================
+  // --- BAGIAN: KENDALI POMPA AIR (REAL-TIME SWITCH VIA BACKEND/MQTT) ---
+  // ===============================================================
   Future<bool> controlPump(int zoneId, String statusPompa) async {
     try {
       final response = await http.post(
@@ -191,7 +204,9 @@ class ApiService {
     }
   }
 
-  // --- BACA & UBAH THRESHOLD ZONA ---
+  // ===============================================================
+  // --- BAGIAN: PENGAMBILAN & PENGATURAN AMBANG BATAS (THRESHOLD) ---
+  // ===============================================================
   Future<Map<String, dynamic>> fetchZoneConfig(int zoneId) async {
     try {
       final response = await http.get(
@@ -236,7 +251,9 @@ class ApiService {
     }
   }
 
-  // --- MANAJEMEN USER & GANTI PASSWORD ---
+  // ===============================================================
+  // --- BAGIAN: MANAJEMEN AKUN PENGGUNA & GANTI KATA SANDI ---
+  // ===============================================================
   Future<bool> createUser({required String username, required String email, required String password, required String role}) async {
     try {
       final response = await http.post(
@@ -280,7 +297,9 @@ class ApiService {
     }
   }
 
-  // --- SMART ALERTING SYSTEM ---
+  // ===============================================================
+  // --- BAGIAN: PENGAMBILAN NOTIFIKASI DARURAT (SMART ALERTING) ---
+  // ===============================================================
   Future<Map<String, dynamic>> fetchZoneAlerts(int zoneId) async {
     try {
       final response = await http.get(
@@ -298,7 +317,9 @@ class ApiService {
     }
   }
 
-  // --- CSV EXPORT REPORT ---
+  // ===============================================================
+  // --- BAGIAN: EKSPOR DATA RIWAYAT KE FORMAT LAPORAN CSV ---
+  // ===============================================================
   Future<String> fetchExportCsv(int zoneId) async {
     try {
       final response = await http.get(
@@ -316,7 +337,9 @@ class ApiService {
     }
   }
 
-  // --- GRAFIK RIWAYAT SENSOR TIME-SERIES ---
+  // ===============================================================
+  // --- BAGIAN: PENGAMBILAN DATA RIWAYAT UNTUK GRAFIK (TIME-SERIES) ---
+  // ===============================================================
   Future<List<SensorData>> fetchSensorHistory(int zoneId) async {
     try {
       final response = await http.get(

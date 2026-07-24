@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 
+// ===============================================================
+// --- BAGIAN: FUNGSI UTAMA PEMANGGILAN NOTIFIKASI POP-UP ATAS ---
+// ===============================================================
 class TopSnackBar {
   static void show(BuildContext context, String message, {bool isError = false, Duration duration = const Duration(seconds: 4)}) {
     final overlay = Overlay.of(context, rootOverlay: true);
@@ -24,6 +27,9 @@ class TopSnackBar {
   }
 }
 
+// ===============================================================
+// --- BAGIAN: KOMPONEN TAMPILAN DAN ANIMASI POP-UP NOTIFIKASI ---
+// ===============================================================
 class _TopSnackBarWidget extends StatefulWidget {
   final String message;
   final bool isError;
